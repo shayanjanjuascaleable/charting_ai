@@ -1,28 +1,9 @@
-#!/bin/bash
+# Install general ODBC libraries
+apt-get update && apt-get install -y unixodbc-dev
 
-# Ye script Azure App Service jaisi Linux environment mein ODBC drivers install karega
-# takay pyodbc sahi tarah kaam kar sakay.
-
-# Update the package list
-sudo apt-get update -y
-
-# Install tools needed for a secure connection
-sudo apt-get install curl apt-transport-https debconf-utils -y
-
-# Install the Microsoft ODBC Driver for SQL Server
-# Add the Microsoft package repository
-curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
-
-# Update the package list again to include the new repository
-sudo apt-get update -y
-
-# Install the ODBC driver and the ODBC development headers
-# The development headers are crucial for pyodbc to build correctly
-sudo ACCEPT_EULA=Y apt-get install msodbcsql17 unixodbc-dev -y
-
-# Run the default Oryx startup script to install Python dependencies
-# and start the application
-# Is mein aapka requirements.txt file use hoga
-/opt/startup/startup.sh
-
+# Download and install the Microsoft SQL Server ODBC driver for Debian 11 (Bookworm)
+# This is required for pyodbc to connect to Azure SQL Database.
+curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+curl https://packages.microsoft.com/config/debian/11/prod.list | tee /etc/apt/sources.list.d/mssql-release.list
+apt-get update
+ACCEPT_EULA=Y apt-get install -y msodbcsql17
