@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title data-translate="appTitle">Vizion AI - Synthetic Data Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ... (CSS remains largely the same) ... */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    #particles-js {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .main-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      width: 100%;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 30px;
+      padding: 50px 40px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    .animated-robot {
+      width: 350px;
+      height: auto;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0); }
+    }
+
+    .text-content {
+      max-width: 500px;
+      text-align: left;
+    }
+
+    .text-content h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #333; /* Default for light mode */
+    }
+
+    .text-content p {
+      font-size: 1.25rem;
+      margin-bottom: 30px;
+      color: #555; /* Default for light mode */
+    }
+
+    .btn {
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+      display: inline-block;
+      font-size: 1rem;
+    }
+
+    .primary-btn {
+      background-color: #086ad8; /* Green */
+      color: white;
+    }
+    .primary-btn:hover {
+      background-color: hsl(212, 93%, 44%);
+    }
+
+    .secondary-btn {
+      background-color: #00bcd4; /* Cyan */
+      color: white;
+    }
+    .secondary-btn:hover {
+      background-color: #0097a7;
+    }
+
+    .top-controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 15px;
+      z-index: 1000;
+      align-items: center;
+    }
+
+    .theme-toggle, .language-select-container {
+      background-color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+    }
+
+    .theme-toggle i {
+        margin-right: 8px;
+    }
+
+    .language-select-container select {
+        border: none;
+        background: transparent;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #333;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .language-select-container i {
+        margin-right: 8px;
+        color: #333;
+    }
+
+
+    /* Dark mode styles */
+    [data-theme="dark"] {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    [data-theme="dark"] .glass-card {
+      background: rgba(30, 30, 30, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="dark"] .text-content h1 {
+        color: #f5f5f5;
+    }
+    [data-theme="dark"] .text-content p {
+        color: #cccccc;
+    }
+
+    [data-theme="dark"] .btn.primary-btn {
+        background-color: #086ad8; /* Darker green */
+    }
+    [data-theme="dark"] .btn.primary-btn:hover {
+        background-color: #086ad8;
+    }
+
+    [data-theme="dark"] .btn.secondary-btn {
+      background-color: #1e88e5; /* Blue */
+      color: white;
+    }
+    [data-theme="dark"] .btn.secondary-btn:hover {
+      background-color: #1976d2;
+    }
+
+    [data-theme="dark"] .theme-toggle,
+    [data-theme="dark"] .language-select-container {
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    [data-theme="dark"] .language-select-container select {
+        color: #e0e0e0;
+    }
+    [data-theme="dark"] .language-select-container i {
+        color: #e0e0e0;
+    }
+
+
+    @media (max-width: 768px) {
+      .glass-card {
+        flex-direction: column;
+        padding: 30px 20px;
+        text-align: center;
+      }
+
+      .animated-robot {
+        width: 250px;
+        margin-bottom: 30px;
+      }
+
+      .text-content {
+        max-width: 100%;
+        text-align: center;
+      }
+
+      .text-content h1 {
+        font-size: 2.5rem;
+      }
+
+      .text-content p {
+        font-size: 1rem;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        font-size: 0.9rem;
+      }
+
+      .top-controls {
+        flex-direction: column;
+        top: 10px;
+        right: 10px;
+        gap: 8px;
+      }
+
+      .theme-toggle, .language-select-container {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="top-controls">
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <i class="fas fa-moon"></i> <span data-translate="themeButton">Theme</span>
+    </button>
+    <div class="language-select-container">
+        <i class="fas fa-globe"></i>
+        <select id="languageSelect" onchange="setLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+  </div>
+  <div id="particles-js"></div>
+  <div class="main-container">
+    <div class="glass-card">
+      <img src="{{ url_for('static', filename='image_409c9f.png') }}" alt="AI Robot" class="animated-robot">
+      <div class="text-content">
+        <h1 data-translate="mainHeading">Executive Charting AI</h1>
+        <p data-translate="mainParagraph">AI agent that transforms natural language requests into clear, insightful data visualizations. Simply describe the chart you need, and it intelligently generates the appropriate visual representation.
+        </p>
+        <a href="/insights" class="btn primary-btn" data-translate="generateInsightsButton">Generate Insights <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    const translations = {
+        en: {
+            appTitle: "Vizion AI - Synthetic Data Intelligence",
+            themeButton: "Theme",
+            mainHeading: "Executive Charting AI",
+            mainParagraph: "AI agent that transforms natural language requests into clear, insightful data visualizations. Simply describe the chart you need, and it intelligently generates the appropriate visual representation.",
+            generateInsightsButton: "Generate Insights",
+            // Add other translations as needed for index.html
+        },
+        es: {
+            appTitle: "Vizion AI - Inteligencia de Datos Sintéticos",
+            themeButton: "Tema",
+            mainHeading: "IA de Gráficos Ejecutivos",
+            mainParagraph: "Agente de IA que transforma solicitudes en lenguaje natural en visualizaciones de datos claras e perspicaces. Simplemente describe el gráfico que necesitas, y generará inteligentemente la representación visual adecuada.",
+            generateInsightsButton: "Generar Insights",
+        },
+        fr: {
+            appTitle: "Vizion AI - Intelligence des Données Synthétiques",
+            themeButton: "Thème",
+            mainHeading: "IA de Cartographie Exécutive",
+            mainParagraph: "Agent IA qui transforme les requêtes en langage naturel en visualisations de données claires et perspicaces. Décrivez simplement le graphique dont vous avez besoin, et il générera intelligemment la représentation visuelle appropriée.",
+            generateInsightsButton: "Générer des Insights",
+        },
+        de: {
+            appTitle: "Vizion AI - Synthetische Datenintelligenz",
+            themeButton: "Thema",
+            mainHeading: "Executive Charting KI",
+            mainParagraph: "KI-Agent, der Anfragen in natürlicher Sprache in klare, aufschlussreiche Datenvisualisierungen umwandelt. Beschreiben Sie einfach das benötigte Diagramm, und es generiert intelligent die entsprechende visuelle Darstellung.",
+            generateInsightsButton: "Insights generieren",
+        },
+        ja: {
+            appTitle: "Vizion AI - 合成データインテリジェンス",
+            themeButton: "テーマ",
+            mainHeading: "エグゼクティブチャートAI",
+            mainParagraph: "自然言語のリクエストを明確で洞察力のあるデータ視覚化に変換するAIエージェント。必要なチャートを記述するだけで、適切な視覚表現をインテリジェントに生成します。",
+            generateInsightsButton: "インサイトを生成",
+        },
+        ko: {
+            appTitle: "Vizion AI - 합성 데이터 인텔리전스",
+            themeButton: "테마",
+            mainHeading: "임원 차트 AI",
+            mainParagraph: "자연어 요청을 명확하고 통찰력 있는 데이터 시각화로 변환하는 AI 에이전트. 필요한 차트를 설명하기만 하면 적절한 시각적 표현을 지능적으로 생성합니다.",
+            generateInsightsButton: "인사이트 생성",
+        },
+        ar: {
+            appTitle: "فيزيون للذكاء الاصطناعي - ذكاء البيانات الاصطناعية",
+            themeButton: "الوضع",
+            mainHeading: "الذكاء الاصطناعي للرسوم البيانية التنفيذية",
+            mainParagraph: "وكيل ذكاء اصطناعي يحول طلبات اللغة الطبيعية إلى تصورات بيانات واضحة وثاقبة. ما عليك سوى وصف الرسم البياني الذي تحتاجه، وسيقوم بإنشاء التمثيل المرئي المناسب بذكاء.",
+            generateInsightsButton: "توليد الرؤى",
+        }
+    };
+
+    function applyTranslations(lang) {
+        document.querySelectorAll('[data-translate]').forEach(element => {
+            const key = element.getAttribute('data-translate');
+            if (translations[lang] && translations[lang][key]) {
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                    element.placeholder = translations[lang][key];
+                } else {
+                    element.innerText = translations[lang][key];
+                }
+            }
+        });
+        document.title = translations[lang].appTitle || document.title;
+        // For RTL languages like Arabic, set text direction
+        if (lang === 'ar') {
+            document.body.style.direction = 'rtl';
+            document.body.style.textAlign = 'right';
+        } else {
+            document.body.style.direction = 'ltr';
+            document.body.style.textAlign = 'left';
+        }
+    }
+
+    // Theme toggle logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'dark') {
+            document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+        } else {
+            document.querySelector('.theme-toggle i').className = 'fas fa-moon';
+        }
+
+        // Language selection logic
+        const savedLanguage = localStorage.getItem('language') || 'en';
+        document.getElementById('languageSelect').value = savedLanguage;
+        applyTranslations(savedLanguage); // Apply translations on load
+    });
+
+    function toggleTheme() {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        if (newTheme === 'dark') {
+            document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+        } else {
+            document.querySelector('.theme-toggle i').className = 'fas fa-moon';
+        }
+    }
+
+    function setLanguage(lang) {
+        localStorage.setItem('language', lang);
+        applyTranslations(lang); // Apply translations immediately
+    }
+
+    // Particles.js configuration
+    particlesJS('particles-js', {
+      "particles": {
+        "number": {
+          "value": 80,
+          "density": {
+            "enable": true,
+            "value_area": 800
+          }
+        },
+        "color": {
+          "value": "#ffffff"
+        },
+        "shape": {
+          "type": "circle",
+          "stroke": {
+            "width": 0,
+            "color": "#000000"
+          },
+          "polygon": {
+            "nb_sides": 5
+          },
+          "image": {
+            "src": "img/github.svg",
+            "width": 100,
+            "height": 100
+          }
+        },
+        "opacity": {
+          "value": 0.5,
+          "random": false,
+          "anim": {
+            "enable": false,
+            "speed": 1,
+            "opacity_min": 0.1,
+            "sync": false
+          }
+        },
+        "size": {
+          "value": 3,
+          "random": true,
+          "anim": {
+            "enable": false,
+            "speed": 40,
+            "size_min": 0.1,
+            "sync": false
+          }
+        },
+        "line_linked": {
+          "enable": true,
+          "distance": 150,
+          "color": "#ffffff",
+          "opacity": 0.4,
+          "width": 1
+        },
+        "move": {
+          "enable": true,
+          "speed": 6,
+          "direction": "none",
+          "random": false,
+          "straight": false,
+          "out_mode": "out",
+          "bounce": false,
+          "attract": {
+            "enable": false,
+            "rotateX": 600,
+            "rotateY": 1200
+          }
+        }
+      },
+      "interactivity": {
+        "detect_on": "canvas",
+        "events": {
+          "onhover": {
+            "enable": true,
+            "mode": "grab"
+          },
+          "onclick": {
+            "enable": true,
+            "mode": "push"
+          },
+          "resize": true
+        },
+        "modes": {
+          "grab": {
+            "distance": 140,
+            "line_linked": {
+              "opacity": 1
+            }
+          },
+          "bubble": {
+            "distance": 400,
+            "size": 40,
+            "duration": 2,
+            "opacity": 8,
+            "speed": 3
+          },
+          "repulse": {
+            "distance": 200,
+            "duration": 0.4
+          },
+          "push": {
+            "particles_nb": 4
+          },
+          "remove": {
+            "particles_nb": 2
+          }
+        }
+      },
+      "retina_detect": true
+    });
+  </script>
+</body>
+</html>
