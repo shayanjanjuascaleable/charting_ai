@@ -12,11 +12,12 @@ import plotly.graph_objects as go
 from scipy.interpolate import griddata
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'a_default_secret_key_for_development_only')
+# Flask secret key is hard-coded as per your request
+app.secret_key = 'YourStrongSecretKey123!'
 
 # --- LLM API Configuration ---
-# Your API key should be set as an environment variable in Azure App Service.
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+# Gemini API Key is hard-coded as per your request
+GEMINI_API_KEY = 'AIzaSyAjlVk5Ai8nyzK5dwBRFqfKmN9_FYP18UA'
 
 if not GEMINI_API_KEY:
     raise ValueError(
@@ -27,11 +28,11 @@ model_for_chart_params = genai.GenerativeModel('gemini-2.5-flash')
 model_for_suggestions = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- Database Configuration ---
-# Credentials and server details should be set as environment variables in Azure App Service.
-SERVER = os.environ.get('DB_SERVER')
-DATABASE = os.environ.get('DB_DATABASE')
-USERNAME = os.environ.get('DB_USERNAME')
-PASSWORD = os.environ.get('DB_PASSWORD')
+# All database credentials are now hard-coded as per your request
+SERVER = 'aiserverscaleable.database.windows.net'
+DATABASE = 'Charting_Dataset_DB'
+USERNAME = 'webuser'
+PASSWORD = 'Secure#P@ssw0rd'
 
 # Define the DB_CONFIG dictionary
 DB_CONFIG = {
@@ -357,6 +358,13 @@ Your response must ONLY be the JSON object.
 def home():
     """Renders the main HTML page for the application."""
     return render_template('index.html')
+    
+# This new route is added to handle the insights page request.
+@app.route('/insights_page')
+def insights_page():
+    """Renders the insights HTML page."""
+    return render_template('insights_page.html')
+
 
 @app.route('/get_db_info', methods=['GET'])
 def get_db_info():
