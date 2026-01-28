@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title data-translate="dashboardTitle">AI-Powered Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js" charset="utf-8"></script>
+    <style>
+        /* Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f2f7, #c1dce6); /* Soft blue gradient */
+            color: #333;
+            height: 100vh;
+            transition: background 0.5s ease-in-out, color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll */
+        }
+
+        /* Dark Mode */
+        body.dark {
+            background: linear-gradient(135deg, #2c3e50, #34495e); /* Darker blue gradient */
+            color: #e0e0e0;
+        }
+
+        /* Header */
+        header {
+            background-color: hsl(212, 93%, 44%); /* Darker blue with slight transparency */
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px); /* Glass effect for header */
+            -webkit-backdrop-filter: blur(8px); /* Safari support */
+            z-index: 100; /* Ensure header is above other elements */
+        }
+
+        body.dark header {
+            background-color: rgba(44, 62, 80, 0.9); /* Even darker blue for dark mode header */
+        }
+
+        .dashboard-left-section {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Space between back arrow and title */
+        }
+
+        .dashboard-title-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editable-dashboard-name {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: white;
+            cursor: text;
+            padding: 5px 8px;
+            border-radius: 8px;
+            outline: none;
+            min-width: 180px;
+            transition: background-color 0.2s ease;
+        }
+
+        .editable-dashboard-name:focus {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Controls and Buttons (General Styling) */
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: flex-end; /* Align to right */
+            align-items: center; /* Vertically align items */
+        }
+
+        button, .btn-link { /* Apply to buttons and a-tags used as buttons */
+            padding: 10px 18px;
+            border: none;
+            border-radius: 25px; /* Pill-shaped buttons */
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: rgba(90, 150, 200, 0.7); /* Lighter blue with more transparency for glass effect */
+            backdrop-filter: blur(5px); /* Glass effect for buttons */
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle white border */
+        }
+
+        body.dark button, body.dark .btn-link {
+            background-color: rgba(60, 90, 120, 0.7); /* Darker blue for dark mode */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Hover effects for most buttons */
+        button:hover:not(.no-hover), .btn-link:hover:not(.no-hover) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            background-color: hsl(212, 93%, 44%); /* Slightly more opaque on hover */
+        }
+        body.dark button:hover:not(.no-hover), body.dark .btn-link:hover:not(.no-hover) {
+            background-color: rgba(60, 90, 120, 0.9);
+        }
+
+        /* Specific style for the back arrow button - no hover effects, circular */
+        .btn-back-arrow {
+            width: 45px;
+            height: 45px;
+            padding: 0;
+            border-radius: 50%; /* Circular */
+            justify-content: center; /* Center the icon */
+            font-size: 1.2em;
+            background-color: hsl(212, 93%, 44%); /* Consistent glass-blue */
+            box-shadow: none; /* No shadow */
+            transform: none; /* No transform */
+        }
+        .btn-back-arrow:hover { /* Override general hover styles */
+            background-color: hsl(212, 93%, 44%); /* Keep same background on hover */
+            box-shadow: none;
+            transform: none;
+        }
+        body.dark .btn-back-arrow {
+            background-color: rgba(60, 90, 120, 0.7);
+        }
+        body.dark .btn-back-arrow:hover {
+            background-color: rgba(60, 90, 120, 0.7);
+        }
+
+
+        /* Theme Switch Styles */
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px; /* Width of the switch track */
+            height: 34px; /* Height of the switch track */
+            vertical-align: middle; /* Align with other elements */
+            margin: 0; /* Override any button margin */
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Consistent with other glass buttons */
+            border-radius: 34px; /* Make the track rounded */
+            background-color: rgba(90, 150, 200, 0.7); /* Light mode track color (glass effect) */
+            transition: background-color 0.4s;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex; /* Use flex to center the icon */
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.dark .theme-switch {
+            background-color: rgba(60, 90, 120, 0.7); /* Dark mode track color */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent; /* Background handled by .theme-switch */
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px; /* Ensure slider itself is rounded */
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white; /* Thumb color for light mode */
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%; /* Make thumb circular */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: flex; /* Flexbox for centering icon */
+            align-items: center;
+            justify-content: center;
+            font-family: "Font Awesome 6 Free"; /* Important for Font Awesome icons */
+            font-weight: 900; /* For solid icons */
+            font-size: 0.9em;
+            color: #333; /* Icon color for light mode */
+        }
+
+        /* Sun icon for light mode */
+        .light .theme-switch .slider:before {
+            content: "\f185"; /* Unicode for sun icon */
+        }
+        /* Moon icon for dark mode */
+        .dark .theme-switch .slider:before {
+            content: "\f186"; /* Unicode for moon icon */
+            background-color: #f0f0f0; /* Slightly off-white for dark mode thumb */
+            color: #666; /* Darker icon color for dark mode */
+        }
+
+
+        /* When checkbox is checked (dark mode active) */
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px); /* Move thumb to the right */
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Specific hover for the switch to make it consistent */
+        .theme-switch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            background-color: hsl(212, 93%, 44%); /* Slightly more opaque on hover */
+        }
+        body.dark .theme-switch:hover {
+            background-color: rgba(60, 90, 120, 0.9);
+        }
+
+
+        /* Dropdown container */
+        .dropdown {
+            position: relative;
+            display: inline-block; /* Aligns with other buttons */
+        }
+
+        /* Dropdown button (3 dots) */
+        .dropdown-button {
+            padding: 0; /* Remove padding to make it compact */
+            width: 45px; /* Fixed width */
+            height: 45px; /* Fixed height */
+            border-radius: 50%; /* Make it circular */
+            font-size: 1.3em; /* Size of the dots icon */
+            justify-content: center; /* Center the icon */
+            background-color: hsl(212, 93%, 44%); /* Consistent glass-blue */
+        }
+        body.dark .dropdown-button {
+            background-color: rgba(60, 90, 120, 0.7);
+        }
+
+        .dropdown-button:hover {
+            background-color: rgba(90, 150, 200, 0.9);
+        }
+        body.dark .dropdown-button:hover {
+            background-color: rgba(60, 90, 120, 0.9);
+        }
+
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9); /* White with transparency */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            padding: 10px 0;
+            right: 0; /* Align to the right of the dropdown button */
+            top: 100%; /* Position below the dropdown button */
+            border: 1px solid rgba(255, 255, 255, 0.5); /* Subtle border */
+        }
+
+        body.dark .dropdown-content {
+            background-color: rgba(30, 30, 40, 0.9); /* Darker for dark mode */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dropdown-content button {
+            color: #333; /* Dark text for light dropdown */
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%; /* Make buttons fill dropdown width */
+            text-align: left;
+            background: none; /* No background for dropdown items initially */
+            border: none;
+            border-radius: 0; /* No pill shape here */
+            box-shadow: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        body.dark .dropdown-content button {
+            color: #e0e0e0; /* Light text for dark dropdown */
+        }
+
+        .dropdown-content button:hover {
+            background-color: rgba(220, 240, 250, 0.7); /* Light blue highlight on hover */
+            color: #0056b3; /* Darker blue text on hover */
+            transform: none; /* No transform for dropdown items */
+            box-shadow: none;
+        }
+        body.dark .dropdown-content button:hover {
+            background-color: rgba(40, 60, 80, 0.7);
+            color: #a0d8f0;
+        }
+
+
+        .dropdown.show .dropdown-content {
+            display: block;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden; /* Prevent main content from scrolling itself */
+        }
+
+        .chart-area {
+            flex: 2;
+            background-color: rgba(255, 255, 255, 1); /* Semi-transparent white */
+            backdrop-filter: blur(10px); /* Glass effect */
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            display: grid; /* Changed to grid */
+            grid-template-columns: repeat(2, 1fr); /* Display 2 charts per row */
+            gap: 20px; /* Gap between charts */
+            align-items: start; /* Align items to the start of their grid area */
+            justify-content: start; /* Justify items to the start of their grid area */
+            padding: 20px; /* Add padding to the grid container */
+            overflow-y: auto; /* Allow scrolling if many charts */
+            min-height: 400px; /* Ensure a minimum height for the chart area */
+        }
+
+        body.dark .chart-area {
+            background-color: rgba(0, 0, 0, 0.3); /* Darker semi-transparent for dark mode */
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Individual chart item container */
+        .chart-item {
+            background-color: rgba(255, 255, 255, 0.8); /* Slightly more opaque for individual charts */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            position: relative; /* For dropdown positioning */
+            display: flex; /* To center "No chart" message if it appears inside */
+            flex-direction: column; /* To stack content vertically */
+            justify-content: center;
+            align-items: center;
+            min-height: 350px; /* Minimum height for each chart card */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        body.dark .chart-item {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* Ensure the Plotly graph div takes full space within its container */
+        .chart-item .plotly-graph-div {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Adjust the initial message styling if it's inside the grid */
+        .initial-chart-message {
+            text-align: center;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 20px;
+            grid-column: 1 / -1; /* Span across all columns in the grid */
+            width: 100%; /* Ensure it takes full width */
+        }
+        body.dark .initial-chart-message {
+            color: #ccc;
+        }
+
+        /* Chart area actions button container (for 3-dot dropdown) */
+        .chart-action-button-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 5; /* Ensure it's above chart content */
+        }
+
+        /* Loading overlay */
+        .chart-area .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.85); /* Slightly less transparent */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #34495e; /* Dark blue */
+            z-index: 10;
+            border-radius: 15px; /* Match parent */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        body.dark .chart-area .loading-overlay {
+            background: rgba(0, 0, 0, 0.65);
+            color: #a0d8f0; /* Lighter blue */
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.15);
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        body.dark .spinner {
+            border-top: 4px solid #85c1e9; /* Lighter blue for dark mode */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #c0392b; /* Dark red */
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #e74c3c;
+            background-color: rgba(255, 230, 230, 0.8); /* Light red with transparency */
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            grid-column: 1 / -1; /* Span across all columns */
+        }
+        body.dark .error-message {
+            color: #ffb6c1;
+            background-color: rgba(80, 30, 30, 0.8);
+            border-color: #ffb6c1;
+        }
+        .info-message {
+            color: #2980b9; /* Dark blue */
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #3498db;
+            background-color: rgba(220, 240, 250, 0.8); /* Light blue with transparency */
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            grid-column: 1 / -1; /* Span across all columns */
+        }
+        body.dark .info-message {
+            color: #85c1e9;
+            background-color: rgba(40, 60, 80, 0.8);
+            border-color: #85c1e9;
+        }
+
+        /* Chatbot */
+        .chatbot {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+            backdrop-filter: blur(10px); /* Glass effect */
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            min-width: 320px;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle border */
+        }
+
+        body.dark .chatbot {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-header {
+            background: hsl(212, 93%, 44%); /* Darker blue, slightly more opaque */
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        body.dark .chat-header {
+            background: rgba(44, 62, 80, 0.95);
+        }
+
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px; /* Add padding for easier click */
+            border-radius: 5px;
+            transition: background-color 0.2s ease;
+        }
+        .chat-header button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .chat-header .refresh-chat-btn {
+            margin-left: auto;
+            margin-right: 10px;
+        }
+
+        .chat-messages {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1;
+            background: rgba(248, 248, 255, 0.7); /* Light, semi-transparent background */
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        body.dark .chat-messages {
+            background: rgba(20, 20, 30, 0.7);
+        }
+
+        .chat-messages div {
+            margin-bottom: 10px;
+            line-height: 1.4;
+            max-width: 90%;
+            word-wrap: break-word;
+            padding: 10px 15px;
+            border-radius: 18px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-user {
+            background-color: #e6f7ff; /* Light blue */
+            color: #0056b3; /* Darker blue */
+            border-bottom-right-radius: 5px; /* Flat corner on user side */
+            margin-left: auto;
+        }
+        .message-bot {
+            background-color: #f0f0f5; /* Light greyish */
+            color: #333;
+            border-bottom-left-radius: 5px; /* Flat corner on bot side */
+            margin-right: auto;
+        }
+        .message-status {
+            font-style: italic;
+            color: #888;
+            text-align: center;
+            font-size: 0.9em;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            max-width: 100%;
+            background: none; /* No background for status messages */
+            box-shadow: none;
+        }
+
+        body.dark .message-user {
+            background-color: #003366; /* Darker blue */
+            color: #a0d8f0; /* Lighter blue */
+        }
+        body.dark .message-bot {
+            background-color: #3a3a4c; /* Dark grey */
+            color: #e0e0e0;
+        }
+        body.dark .message-status {
+            color: #aaa;
+        }
+
+        .suggestion-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 15px;
+            background: rgba(240, 240, 245, 0.7); /* Light semi-transparent */
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+        body.dark .suggestion-buttons {
+            background: rgba(30, 30, 40, 0.7);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .suggestion-buttons button {
+            padding: 8px 15px;
+            background-color: rgba(160, 216, 240, 0.7); /* Soft blue for suggestions */
+            color: #333;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .suggestion-buttons button:hover {
+            background-color: rgba(133, 193, 233, 0.9);
+            transform: translateY(-1px);
+        }
+        body.dark .suggestion-buttons button {
+            background-color: rgba(74, 106, 138, 0.7);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body.dark .suggestion-buttons button:hover {
+            background-color: rgba(90, 122, 154, 0.9);
+        }
+
+        .chat-input {
+            display: flex;
+            background: rgba(255, 255, 255, 0.8); /* Slightly transparent white */
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            position: relative;
+        }
+        body.dark .chat-input {
+            background: rgba(10, 10, 15, 0.8);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-input input {
+            flex: 1;
+            border: none;
+            padding: 12px 15px;
+            font-size: 1rem;
+            outline: none;
+            background: transparent; /* Make input background transparent to show parent */
+            color: inherit; /* Inherit text color from body */
+        }
+
+        .chat-input button {
+            padding: 0 20px;
+            border: none;
+            background: rgba(52, 152, 219, 0.9); /* Blue send button */
+            color: white;
+            font-size: 1.2rem;
+            border-radius: 0; /* No specific border-radius here to match input */
+            cursor: pointer;
+            transition: background 0.2s ease;
+            box-shadow: none; /* Remove shadow to blend */
+        }
+
+        .chat-input button:hover {
+            background: rgba(33, 125, 187, 0.9); /* Darker blue on hover */
+            transform: none; /* No transform for send button */
+            box-shadow: none;
+        }
+        body.dark .chat-input button {
+            background: rgba(74, 106, 138, 0.9);
+        }
+        body.dark .chat-input button:hover {
+            background: rgba(90, 122, 154, 0.9);
+        }
+
+
+        .chat-circle {
+            width: 60px;
+            height: 60px;
+            background: rgba(52, 152, 219, 0.9); /* Blue circle */
+            color: white;
+            border-radius: 50%;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            font-size: 1.6rem;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .chat-circle:hover {
+            background: rgba(33, 125, 187, 0.9); /* Darker blue on hover */
+            transform: translateY(-3px);
+        }
+        body.dark .chat-circle {
+            background: rgba(74, 106, 138, 0.9);
+        }
+        body.dark .chat-circle:hover {
+            background: rgba(90, 122, 154, 0.9);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Media Queries for responsiveness */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                height: auto;
+                overflow-y: auto; /* Allow main content to scroll vertically */
+            }
+            .chatbot {
+                max-width: 100%;
+                min-width: unset;
+            }
+            .chart-area {
+                grid-template-columns: 1fr; /* Stack charts on small screens */
+                min-height: 400px;
+            }
+            .chart-item {
+                min-height: 300px; /* Adjust min height for single column on mobile */
+            }
+            .chat-circle {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+            .controls {
+                flex-direction: column; /* Stack buttons on small screens */
+                align-items: center; /* Center buttons */
+                gap: 8px; /* Reduce gap */
+            }
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 10px;
+            }
+            .dashboard-left-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .editable-dashboard-name {
+                font-size: 1.4rem;
+                min-width: unset; /* Allow it to shrink on small screens */
+                text-align: center;
+            }
+            .btn-back-arrow {
+                width: 40px;
+                height: 40px;
+                font-size: 1em;
+            }
+            /* Dropdown on small screens for the 3-dot button */
+            .chart-action-button-container .dropdown-content {
+                position: static; /* Remove absolute positioning */
+                box-shadow: none;
+                border-radius: 0;
+                border-top: 1px solid rgba(0,0,0,0.1);
+                border-bottom: 1px solid rgba(0,0,0,0.1);
+            }
+            .chart-action-button-container .dropdown-content button {
+                text-align: center;
+            }
+            .chart-action-button-container .dropdown-button {
+                width: 50px; /* Keep it circular */
+                height: 50px;
+            }
+
+            /* Adjust theme switch for smaller screens */
+            .theme-switch {
+                width: 50px;
+                height: 28px;
+                border-radius: 28px;
+            }
+            .slider:before {
+                height: 20px;
+                width: 20px;
+                left: 4px;
+                bottom: 4px;
+                font-size: 0.8em; /* Smaller icon */
+            }
+            input:checked + .slider:before {
+                -webkit-transform: translateX(22px); /* Adjust thumb movement for smaller size */
+                -ms-transform: translateX(22px);
+                transform: translateX(22px);
+            }
+        }
+    </style>
+</head>
+<body class="light">
+    <header>
+        <div class="dashboard-left-section">
+            <a href="/" class="btn-link btn-back-arrow no-hover" title="Go Back">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="dashboard-title-container">
+                <span id="dashboard-name" class="editable-dashboard-name" contenteditable="true" data-translate="dashboardName">AI-Powered Dashboard</span>
+                <i class="fas fa-edit" style="color: white; font-size: 0.9em;"></i>
+            </div>
+        </div>
+        <div class="controls">
+            <label class="theme-switch" title="Toggle Theme">
+                <input type="checkbox" id="themeToggleCheckbox">
+                <span class="slider round"></span>
+            </label>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div id="dashboard-content" class="chart-area">
+            <!-- Charts will be rendered here dynamically -->
+        </div>
+
+        <div id="chatbot-box" class="chatbot">
+            <div class="chat-header">
+                <span data-translate="chatWithAI">Chat with AI</span>
+                <button class="refresh-chat-btn" onclick="clearMessages()" title="Refresh Chat"><i class="fas fa-sync-alt"></i></button>
+                <button onclick="toggleChat()" title="Close Chat"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <!-- Initial message will be added by JavaScript -->
+            </div>
+            <div id="suggestion-buttons" class="suggestion-buttons hidden">
+            </div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Type your query..." onkeydown="if(event.keyCode === 13) sendMessage()" data-translate="typeQueryPlaceholder">
+                <button onclick="sendMessage()" title="Send Message"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-circle" class="chat-circle hidden" onclick="toggleChat()" title="Open Chat">
+        <i class="fas fa-comments"></i>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('userInput');
+        const chatbotBox = document.getElementById('chatbot-box');
+        const chatCircle = document.getElementById('chat-circle');
+        const dashboardContent = document.getElementById('dashboard-content');
+        const suggestionButtonsContainer = document.getElementById('suggestion-buttons');
+        const dashboardNameElement = document.getElementById('dashboard-name');
+        const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
+        
+        let chartRawDataStore = {}; // To store raw data for "View Data"
+
+        const translations = {
+            en: {
+                dashboardTitle: "AI-Powered Dashboard",
+                dashboardName: "AI-Powered Dashboard",
+                chatWithAI: "Chat with AI",
+                refreshChat: "Refresh Chat",
+                closeChat: "Close Chat",
+                typeQueryPlaceholder: "Type your query...",
+                openChat: "Open Chat",
+                noChartGenerated: "No chart generated yet. Type your query in the chatbox below to get started!",
+                connectingToAI: "Connecting to AI...",
+                processingRequest: "Processing request...",
+                chartGeneratedSuccessfully: "Chart generated successfully!",
+                errorCommunicatingAI: "Error communicating with the AI. Please try again.",
+                chatCleared: "Chat cleared.",
+                allChartsCleared: "All charts cleared.",
+                saveChart: "Save Chart",
+                exportPng: "Export PNG",
+                removeChart: "Remove Chart",
+                viewData: "View Data", // New translation
+                chartSavedSimulation: "Chart ID {chartId} saved locally (simulation).",
+                noChartToExport: "No chart found with ID {chartId} to export.",
+                noChartToRemove: "No chart found with ID {chartId} to remove.",
+                dashboardSavedSimulation: "Dashboard saved locally (simulation).",
+                dashboardSnapshotExported: "Dashboard snapshot (first chart) exported as PNG. For full PDF export of the dashboard, consider a dedicated library or server-side rendering.",
+                noChartsToExportDashboard: "No charts to export. Please generate a chart first.",
+                errorUnderstandingRequest: "I had trouble understanding your request for a chart. Could you please rephrase it?",
+                couldNotFetchData: "I could not fetch data for the requested chart. The table might be empty or the columns are incorrect.",
+                tableNotFound: "I couldn't find the table '{tableName}' in the database. Please specify a valid table from the schema. Available tables are: {availableTables}",
+                unsupportedChartType: "Unsupported chart type requested.",
+                xAxisNotFound: "X-axis column '{colName}' not found in data. Available columns: {availableCols}",
+                yAxisNotFound: "Y-axis column '{colName}' not found in data. Available columns: {availableCols}",
+                colorColNotFound: "Color column '{colName}' not found in data. Available columns: {availableCols}",
+                pieChartRequires: "Pie chart requires both names (x_axis) and values (y_axis).",
+                donutChartRequires: "Donut chart requires both names (x_axis) and values (y_axis).",
+                heatmapRequires: "Heatmap requires X, Y, and Z (value) columns. Z-axis column '{colName}' not found.",
+                scatter3DRequires: "3D Scatter plot requires X, Y, and Z columns. Z-axis column '{colName}' not found.",
+                bubbleChartRequires: "Bubble chart requires a 'size' column. Size column '{colName}' not found.",
+                cannotApplyAggregation: "Warning: Cannot apply {aggType} to non-numerical column '{colName}'.",
+                couldNotDetermineColumns: "Could not determine columns to select for table {tableName}.",
+                noSpecificColumns: "No specific columns identified for table {tableName}. Selecting all available columns.",
+                errorRetrievingSchema: "Error: Could not retrieve database schema. Please check database connection.",
+                aiDidNotUnderstand: "I didn't fully understand your request. Perhaps you could try one of these, or be more specific:",
+                unexpectedError: "An unexpected error occurred: {error}. Please try again.",
+                connectionError: "An error occurred while connecting to the AI service. Please try again.",
+                couldNotGenerateChart: "No chart could be generated for your query. Please try rephrasing or ask for specific chart types.",
+                chartRemoved: "Chart {chartId} removed.",
+                chartExported: "Chart {chartId} exported as PNG.",
+                moreActions: "More Actions",
+                goBack: "Go Back",
+                thinking: "Thinking...",
+                noDataForChart: "No data available for this chart.", // New translation
+                chartData: "Chart Data", // New translation
+                close: "Close", // New translation
+            },
+            es: {
+                dashboardTitle: "Panel de control con IA",
+                dashboardName: "Panel de control con IA",
+                chatWithAI: "Chatear con IA",
+                refreshChat: "Actualizar Chat",
+                closeChat: "Cerrar Chat",
+                typeQueryPlaceholder: "Escribe tu consulta...",
+                openChat: "Abrir Chat",
+                noChartGenerated: "Aún no se ha generado ningún gráfico. ¡Escribe tu consulta en el chat de abajo para empezar!",
+                connectingToAI: "Conectando a la IA...",
+                processingRequest: "Procesando solicitud...",
+                chartGeneratedSuccessfully: "¡Gráfico generado con éxito!",
+                errorCommunicatingAI: "Error al comunicarse con la IA. Por favor, inténtalo de nuevo.",
+                chatCleared: "Chat borrado.",
+                allChartsCleared: "Todos los gráficos borrados.",
+                saveChart: "Guardar Gráfico",
+                exportPng: "Exportar PNG",
+                removeChart: "Eliminar Gráfico",
+                viewData: "Ver Datos",
+                chartSavedSimulation: "Gráfico ID {chartId} guardado localmente (simulación).",
+                noChartToExport: "No se encontró ningún gráfico con ID {chartId} para exportar.",
+                noChartToRemove: "No se encontró ningún gráfico con ID {chartId} para eliminar.",
+                dashboardSavedSimulation: "Panel de control guardado localmente (simulación).",
+                dashboardSnapshotExported: "Instantánea del panel de control (primer gráfico) exportada como PNG. Para la exportación completa a PDF del panel, considere una biblioteca dedicada o la renderización del lado del servidor.",
+                noChartsToExportDashboard: "No hay gráficos para exportar. Por favor, genera un gráfico primero.",
+                errorUnderstandingRequest: "Tuve problemas para entender tu solicitud de un gráfico. ¿Podrías reformularla?",
+                couldNotFetchData: "No pude obtener datos para el gráfico solicitado. La tabla podría estar vacía o las columnas son incorrectas.",
+                tableNotFound: "No pude encontrar la tabla '{tableName}' en la base de datos. Por favor, especifica una tabla válida del esquema. Las tablas disponibles son: {availableTables}",
+                unsupportedChartType: "Tipo de gráfico no compatible solicitado.",
+                xAxisNotFound: "Columna del eje X '{colName}' no encontrada en los datos. Columnas disponibles: {availableCols}",
+                yAxisNotFound: "Columna del eje Y '{colName}' no encontrada en los datos. Columnas disponibles: {availableCols}",
+                colorColNotFound: "Columna de color '{colName}' no encontrada en los datos. Columnas disponibles: {availableCols}",
+                pieChartRequires: "El gráfico circular requiere nombres (x_axis) y valores (y_axis).",
+                donutChartRequires: "El gráfico de anillos requiere nombres (x_axis) y valores (y_axis).",
+                heatmapRequires: "El mapa de calor requiere columnas X, Y y Z (valor). La columna del eje Z '{colName}' no se encontró.",
+                scatter3DRequires: "El gráfico de dispersión 3D requiere columnas X, Y y Z. La columna del eje Z '{colName}' no se encontró.",
+                bubbleChartRequires: "El gráfico de burbujas requiere una columna de 'tamaño'. La columna de tamaño '{colName}' no se encontró.",
+                cannotApplyAggregation: "Advertencia: No se puede aplicar {aggType} a la columna no numérica '{colName}'.",
+                couldNotDetermineColumns: "No se pudieron determinar las columnas a seleccionar para la tabla {tableName}.",
+                noSpecificColumns: "No se identificaron columnas específicas para la tabla {tableName}. Seleccionando todas las columnas disponibles.",
+                errorRetrievingSchema: "Error: No se pudo recuperar el esquema de la base de datos. Por favor, verifica la conexión a la base de datos.",
+                aiDidNotUnderstand: "No entendí completamente tu solicitud. Quizás podrías intentar una de estas opciones, o ser más específico:",
+                unexpectedError: "Ocurrió un error inesperado: {error}. Por favor, inténtalo de nuevo.",
+                connectionError: "Ocurrió un error al conectar con el servicio de IA. Por favor, inténtalo de nuevo.",
+                couldNotGenerateChart: "No se pudo generar un gráfico para tu consulta. Intenta reformularla o pide tipos de gráficos específicos.",
+                chartRemoved: "Gráfico {chartId} eliminado.",
+                chartExported: "Gráfico {chartId} exportado como PNG.",
+                moreActions: "Más Acciones",
+                goBack: "Volver",
+                thinking: "Pensando...",
+                noDataForChart: "No hay datos disponibles para este gráfico.",
+                chartData: "Datos del Gráfico",
+                close: "Cerrar",
+            },
+            fr: {
+                dashboardTitle: "Tableau de bord alimenté par l'IA",
+                dashboardName: "Tableau de bord alimenté par l'IA",
+                chatWithAI: "Discuter avec l'IA",
+                refreshChat: "Actualiser le Chat",
+                closeChat: "Fermer le Chat",
+                typeQueryPlaceholder: "Tapez votre requête...",
+                openChat: "Ouvrir le Chat",
+                noChartGenerated: "Aucun graphique généré pour l'instant. Tapez votre requête dans la boîte de discussion ci-dessous pour commencer !",
+                connectingToAI: "Connexion à l'IA...",
+                processingRequest: "Traitement de la requête...",
+                chartGeneratedSuccessfully: "Graphique généré avec succès !",
+                errorCommunicatingAI: "Erreur de communication avec l'IA. Veuillez réessayer.",
+                chatCleared: "Chat effacé.",
+                allChartsCleared: "Tous les graphiques effacés.",
+                saveChart: "Enregistrer le graphique",
+                exportPng: "Exporter en PNG",
+                removeChart: "Supprimer le graphique",
+                viewData: "Voir les données",
+                chartSavedSimulation: "Graphique ID {chartId} enregistré localement (simulation).",
+                noChartToExport: "Aucun graphique trouvé avec l'ID {chartId} à exporter.",
+                noChartToRemove: "Aucun graphique trouvé avec l'ID {chartId} à supprimer.",
+                dashboardSavedSimulation: "Tableau de bord enregistré localement (simulation).",
+                dashboardSnapshotExported: "Capture d'écran du tableau de bord (premier graphique) exportée en PNG. Pour une exportation PDF complète du tableau de bord, envisagez une bibliothèque dédiée ou un rendu côté serveur.",
+                noChartsToExportDashboard: "Aucun graphique à exporter. Veuillez d'abord générer un graphique.",
+                errorUnderstandingRequest: "J'ai eu du mal à comprendre votre demande de graphique. Pourriez-vous la reformuler ?",
+                couldNotFetchData: "Je n'ai pas pu récupérer les données pour le graphique demandé. La table est peut-être vide ou les colonnes sont incorrectes.",
+                tableNotFound: "Je n'ai pas pu trouver la table '{tableName}' dans la base de données. Veuillez spécifier une table valide du schéma. Les tables disponibles sont : {availableTables}",
+                unsupportedChartType: "Type de graphique non pris en charge demandé.",
+                xAxisNotFound: "Colonne de l'axe X '{colName}' introuvable dans les données. Colonnes disponibles : {availableCols}",
+                yAxisNotFound: "Colonne de l'axe Y '{colName}' introuvable dans les données. Colonnes disponibles : {availableCols}",
+                colorColNotFound: "Colonne de couleur '{colName}' introuvable dans les données. Colonnes disponibles : {availableCols}",
+                pieChartRequires: "Le graphique circulaire nécessite à la fois des noms (x_axis) et des valeurs (y_axis).",
+                donutChartRequires: "Le graphique en anneau nécessite à la fois des noms (x_axis) et des valeurs (y_axis).",
+                heatmapRequires: "Le heatmap nécessite les colonnes X, Y et Z (valeur). La colonne de l'axe Z '{colName}' est introuvable.",
+                scatter3DRequires: "Le nuage de points 3D nécessite les colonnes X, Y et Z. La colonne de l'axe Z '{colName}' est introuvable.",
+                bubbleChartRequires: "Le graphique à bulles nécessite une colonne 'taille'. La colonne de taille '{colName}' est introuvable.",
+                cannotApplyAggregation: "Avertissement : Impossible d'appliquer {aggType} à la colonne non numérique '{colName}'.",
+                couldNotDetermineColumns: "Impossible de déterminer les colonnes à sélectionner pour la table {tableName}.",
+                noSpecificColumns: "Aucune colonne spécifique identifiée pour la table {tableName}. Sélection de toutes les colonnes disponibles.",
+                errorRetrievingSchema: "Erreur : Impossible de récupérer le schéma de la base de données. Veuillez vérifier la connexion à la base de données.",
+                aiDidNotUnderstand: "Je n'ai pas entièrement compris votre demande. Vous pourriez peut-être essayer l'une de ces options, ou être plus précis :",
+                unexpectedError: "Une erreur inattendue est survenue : {error}. Veuillez réessayer.",
+                connectionError: "Une erreur est survenue lors de la connexion au service d'IA. Veuillez réessayer.",
+                couldNotGenerateChart: "Impossible de générer un graphique pour votre requête. Veuillez essayer de reformuler ou de demander des types de graphiques spécifiques.",
+                chartRemoved: "Graphique {chartId} supprimé.",
+                chartExported: "Graphique {chartId} exporté en PNG.",
+                moreActions: "Plus d'actions",
+                goBack: "Retour",
+                thinking: "Réflexion...",
+                noDataForChart: "Aucune donnée disponible pour ce graphique.",
+                chartData: "Données du graphique",
+                close: "Fermer",
+            },
+            de: {
+                dashboardTitle: "KI-gesteuertes Dashboard",
+                dashboardName: "KI-gesteuertes Dashboard",
+                chatWithAI: "Mit KI chatten",
+                refreshChat: "Chat aktualisieren",
+                closeChat: "Chat schließen",
+                typeQueryPlaceholder: "Geben Sie Ihre Abfrage ein...",
+                openChat: "Chat öffnen",
+                noChartGenerated: "Noch kein Diagramm generiert. Geben Sie Ihre Abfrage im Chatfeld unten ein, um zu beginnen!",
+                connectingToAI: "Verbindung zu KI wird hergestellt...",
+                processingRequest: "Anfrage wird verarbeitet...",
+                chartGeneratedSuccessfully: "Diagramm erfolgreich generiert!",
+                errorCommunicatingAI: "Fehler bei der Kommunikation mit der KI. Bitte versuchen Sie es erneut.",
+                chatCleared: "Chat geleert.",
+                allChartsCleared: "Alle Diagramme geleert.",
+                saveChart: "Diagramm speichern",
+                exportPng: "PNG exportieren",
+                removeChart: "Diagramm entfernen",
+                viewData: "Daten anzeigen",
+                chartSavedSimulation: "Diagramm-ID {chartId} lokal gespeichert (Simulation).",
+                noChartToExport: "Kein Diagramm mit ID {chartId} zum Exportieren gefunden.",
+                noChartToRemove: "Kein Diagramm mit ID {chartId} zum Entfernen gefunden.",
+                dashboardSavedSimulation: "Dashboard lokal gespeichert (Simulation).",
+                dashboardSnapshotExported: "Dashboard-Schnappschuss (erstes Diagramm) als PNG exportiert. Für den vollständigen PDF-Export des Dashboards sollten Sie eine spezielle Bibliothek oder serverseitiges Rendering in Betracht ziehen.",
+                noChartsToExportDashboard: "Keine Diagramme zum Exportieren. Bitte generieren Sie zuerst ein Diagramm.",
+                errorUnderstandingRequest: "Ich hatte Schwierigkeiten, Ihre Anfrage für ein Diagramm zu verstehen. Könnten Sie sie bitte umformulieren?",
+                couldNotFetchData: "Ich konnte keine Daten für das angeforderte Diagramm abrufen. Die Tabelle ist möglicherweise leer oder die Spalten sind falsch.",
+                tableNotFound: "Ich konnte die Tabelle '{tableName}' in der Datenbank nicht finden. Bitte geben Sie eine gültige Tabelle aus dem Schema an. Verfügbare Tabellen sind: {availableTables}",
+                unsupportedChartType: "Nicht unterstützter Diagrammtyp angefordert.",
+                xAxisNotFound: "X-Achsen-Spalte '{colName}' in Daten nicht gefunden. Verfügbare Spalten: {availableCols}",
+                yAxisNotFound: "Y-Achsen-Spalte '{colName}' in Daten nicht gefunden. Verfügbare Spalten: {availableCols}",
+                colorColNotFound: "Farbspalte '{colName}' in Daten nicht gefunden. Verfügbare Spalten: {availableCols}",
+                pieChartRequires: "Kreisdiagramm erfordert sowohl Namen (x_axis) als auch Werte (y_axis).",
+                donutChartRequires: "Donut-Diagramm erfordert sowohl Namen (x_axis) als auch Werte (y_axis).",
+                heatmapRequires: "Heatmap erfordert X-, Y- und Z-Spalten (Wert). Z-Achsen-Spalte '{colName}' nicht gefunden.",
+                scatter3DRequires: "3D-Streudiagramm erfordert X-, Y- und Z-Spalten. Z-Achsen-Spalte '{colName}' nicht gefunden.",
+                bubbleChartRequires: "Blasendiagramm erfordert eine 'Größen'-Spalte. Größen-Spalte '{colName}' nicht gefunden.",
+                cannotApplyAggregation: "Warnung: {aggType} kann nicht auf die nicht-numerische Spalte '{colName}' angewendet werden.",
+                couldNotDetermineColumns: "Spalten für die Tabelle {tableName} konnten nicht bestimmt werden.",
+                noSpecificColumns: "Keine spezifischen Spalten für Tabelle {tableName} identifiziert. Alle verfügbaren Spalten werden ausgewählt.",
+                errorRetrievingSchema: "Fehler: Datenbankschema konnte nicht abgerufen werden. Bitte überprüfen Sie die Datenbankverbindung.",
+                aiDidNotUnderstand: "Ich habe Ihre Anfrage nicht vollständig verstanden. Vielleicht könnten Sie eine dieser Optionen ausprobieren oder spezifischer sein:",
+                unexpectedError: "Ein unerwarteter Fehler ist aufgetreten: {error}. Bitte versuchen Sie es erneut.",
+                connectionError: "Beim Verbinden mit dem KI-Dienst ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+                couldNotGenerateChart: "Für Ihre Abfrage konnte kein Diagramm generiert werden. Bitte versuchen Sie, die Abfrage neu zu formulieren oder fragen Sie nach bestimmten Diagrammtypen.",
+                chartRemoved: "Diagramm {chartId} entfernt.",
+                chartExported: "Diagramm {chartId} als PNG exportiert.",
+                moreActions: "Mehr Aktionen",
+                goBack: "Zurück",
+                thinking: "Denken...",
+                noDataForChart: "Keine Daten für dieses Diagramm verfügbar.",
+                chartData: "Diagrammdaten",
+                close: "Schließen",
+            },
+            ja: {
+                dashboardTitle: "AIパワードダッシュボード",
+                dashboardName: "AIパワードダッシュボード",
+                chatWithAI: "AIとチャット",
+                refreshChat: "チャットを更新",
+                closeChat: "チャットを閉じる",
+                typeQueryPlaceholder: "クエリを入力...",
+                openChat: "チャットを開く",
+                noChartGenerated: "まだチャートは生成されていません。開始するには、下のチャットボックスにクエリを入力してください！",
+                connectingToAI: "AIに接続中...",
+                processingRequest: "リクエストを処理中...",
+                chartGeneratedSuccessfully: "チャートが正常に生成されました！",
+                errorCommunicatingAI: "AIとの通信エラーが発生しました。もう一度お試しください。",
+                chatCleared: "チャットをクリアしました。",
+                allChartsCleared: "すべてのチャートをクリアしました。",
+                saveChart: "チャートを保存",
+                exportPng: "PNGをエクスポート",
+                removeChart: "チャートを削除",
+                viewData: "データを表示",
+                chartSavedSimulation: "チャートID {chartId} をローカルに保存しました（シミュレーション）。",
+                noChartToExport: "エクスポートするチャート（ID: {chartId}）が見つかりませんでした。",
+                noChartToRemove: "削除するチャート（ID: {chartId}）が見つかりませんでした。",
+                dashboardSavedSimulation: "ダッシュボードをローカルに保存しました（シミュレーション）。",
+                dashboardSnapshotExported: "ダッシュボードのスナップショット（最初のチャート）をPNGとしてエクスポートしました。ダッシュボード全体のPDFエクスポートについては、専用のライブラリまたはサーバーサイドレンダリングを検討してください。",
+                noChartsToExportDashboard: "エクスポートするチャートがありません。まずチャートを生成してください。",
+                errorUnderstandingRequest: "チャートのリクエストを理解できませんでした。別の表現でお願いします。",
+                couldNotFetchData: "要求されたチャートのデータを取得できませんでした。テーブルが空であるか、列が正しくない可能性があります。",
+                tableNotFound: "データベースにテーブル「{tableName}」が見つかりませんでした。スキーマから有効なテーブルを指定してください。利用可能なテーブルは次のとおりです: {availableTables}",
+                unsupportedChartType: "サポートされていないチャートタイプが要求されました。",
+                xAxisNotFound: "データにX軸の列「{colName}」が見つかりませんでした。利用可能な列: {availableCols}",
+                yAxisNotFound: "データにY軸の列「{colName}」が見つかりませんでした。利用可能な列: {availableCols}",
+                colorColNotFound: "データに色列「{colName}」が見つかりませんでした。利用可能な列: {availableCols}",
+                pieChartRequires: "円グラフには名前（x_axis）と値（y_axis）の両方が必要です。",
+                donutChartRequires: "ドーナツチャートには名前（x_axis）と値（y_axis）の両方が必要です。",
+                heatmapRequires: "ヒートマップにはX、Y、Z（値）の列が必要です。Z軸の列「{colName}」が見つかりませんでした。",
+                scatter3DRequires: "3D散布図にはX、Y、Zの列が必要です。Z軸の列「{colName}」が見つかりませんでした。",
+                bubbleChartRequires: "バブルチャートには「サイズ」列が必要です。サイズ列「{colName}」が見つかりませんでした。",
+                cannotApplyAggregation: "警告: 非数値列「{colName}」に{aggType}を適用できません。",
+                couldNotDetermineColumns: "テーブル {tableName} の選択する列を決定できませんでした。",
+                noSpecificColumns: "テーブル {tableName} の特定の列が特定されませんでした。利用可能なすべての列を選択します。",
+                errorRetrievingSchema: "エラー: データベーススキーマを取得できませんでした。データベース接続を確認してください。",
+                aiDidNotUnderstand: "リクエストを完全に理解できませんでした。これらのいずれかを試すか、より具体的にしてください：",
+                unexpectedError: "予期せぬエラーが発生しました: {error}。もう一度お試しください。",
+                connectionError: "AIサービスへの接続中にエラーが発生しました。もう一度お試しください。",
+                couldNotGenerateChart: "クエリのチャートを生成できませんでした。表現を修正するか、特定のチャートタイプを要求してください。",
+                chartRemoved: "チャート {chartId} を削除しました。",
+                chartExported: "チャート {chartId} をPNGとしてエクスポートしました。",
+                moreActions: "その他のアクション",
+                goBack: "戻る",
+                thinking: "考え中...",
+                noDataForChart: "このチャートのデータはありません。",
+                chartData: "チャートデータ",
+                close: "閉じる",
+            },
+            ko: {
+                dashboardTitle: "AI 기반 대시보드",
+                dashboardName: "AI 기반 대시보드",
+                chatWithAI: "AI와 채팅",
+                refreshChat: "채팅 새로고침",
+                closeChat: "채팅 닫기",
+                typeQueryPlaceholder: "쿼리를 입력하세요...",
+                openChat: "채팅 열기",
+                noChartGenerated: "아직 차트가 생성되지 않았습니다. 시작하려면 아래 채팅창에 쿼리를 입력하세요!",
+                connectingToAI: "AI에 연결 중...",
+                processingRequest: "요청 처리 중...",
+                chartGeneratedSuccessfully: "차트가 성공적으로 생성되었습니다!",
+                errorCommunicatingAI: "AI와 통신 오류가 발생했습니다. 다시 시도하십시오.",
+                chatCleared: "채팅이 지워졌습니다.",
+                allChartsCleared: "모든 차트가 지워졌습니다.",
+                saveChart: "차트 저장",
+                exportPng: "PNG 내보내기",
+                removeChart: "차트 제거",
+                viewData: "데이터 보기",
+                chartSavedSimulation: "차트 ID {chartId}가 로컬에 저장되었습니다 (시뮬레이션).",
+                noChartToExport: "내보낼 차트 ID {chartId}를 찾을 수 없습니다.",
+                noChartToRemove: "제거할 차트 ID {chartId}를 찾을 수 없습니다.",
+                dashboardSavedSimulation: "대시보드가 로컬에 저장되었습니다 (시뮬레이션).",
+                dashboardSnapshotExported: "대시보드 스냅샷 (첫 번째 차트)이 PNG로 내보내졌습니다. 대시보드의 전체 PDF 내보내기를 위해서는 전용 라이브러리 또는 서버 측 렌더링을 고려하십시오.",
+                noChartsToExportDashboard: "내보낼 차트가 없습니다. 먼저 차트를 생성하십시오.",
+                errorUnderstandingRequest: "차트 요청을 이해하는 데 문제가 있었습니다. 다시 말씀해 주시겠어요?",
+                couldNotFetchData: "요청한 차트에 대한 데이터를 가져올 수 없습니다. 테이블이 비어 있거나 열이 올바르지 않을 수 있습니다.",
+                tableNotFound: "데이터베이스에서 테이블 '{tableName}'을(를) 찾을 수 없습니다. 스키마에서 유효한 테이블을 지정하십시오. 사용 가능한 테이블은 다음과 같습니다: {availableTables}",
+                unsupportedChartType: "지원되지 않는 차트 유형이 요청되었습니다.",
+                xAxisNotFound: "데이터에서 X축 열 '{colName}'을(를) 찾을 수 없습니다. 사용 가능한 열: {availableCols}",
+                yAxisNotFound: "데이터에서 Y축 열 '{colName}'을(를) 찾을 수 없습니다. 사용 가능한 열: {availableCols}",
+                colorColNotFound: "데이터에서 색상 열 '{colName}'을(를) 찾을 수 없습니다. 사용 가능한 열: {availableCols}",
+                pieChartRequires: "원형 차트는 이름(x_axis)과 값(y_axis)이 모두 필요합니다.",
+                donutChartRequires: "도넛 차트는 이름(x_axis)과 값(y_axis)이 모두 필요합니다.",
+                heatmapRequires: "히트맵에는 X, Y, Z(값) 열이 필요합니다. Z축 열 '{colName}'을(를) 찾을 수 없습니다.",
+                scatter3DRequires: "3D 산점도에는 X, Y, Z 열이 필요합니다. Z축 열 '{colName}'을(를) 찾을 수 없습니다.",
+                bubbleChartRequires: "버블 차트에는 '크기' 열이 필요합니다. 크기 열 '{colName}'을(를) 찾을 수 없습니다.",
+                cannotApplyAggregation: "경고: 비숫자 열 '{colName}'에 {aggType}을(를) 적용할 수 없습니다.",
+                couldNotDetermineColumns: "테이블 {tableName}에 대해 선택할 열을 결정할 수 없습니다.",
+                noSpecificColumns: "테이블 {tableName}에 대해 특정 열이 식별되지 않았습니다. 사용 가능한 모든 열을 선택합니다.",
+                errorRetrievingSchema: "오류: 데이터베이스 스키마를 검색할 수 없습니다. 데이터베이스 연결을 확인하십시오.",
+                aiDidNotUnderstand: "요청을 완전히 이해하지 못했습니다. 다음 중 하나를 시도하거나 더 구체적으로 말씀해 주십시오:",
+                unexpectedError: "예상치 못한 오류가 발생했습니다: {error}. 다시 시도해 주세요.",
+                connectionError: "AI 서비스에 연결하는 동안 오류가 발생했습니다. 다시 시도해 주세요.",
+                couldNotGenerateChart: "쿼리에 대한 차트를 생성할 수 없습니다. 다시 표현하거나 특정 차트 유형을 요청하십시오.",
+                chartRemoved: "차트 {chartId}가 제거되었습니다.",
+                chartExported: "차트 {chartId}가 PNG로 내보내졌습니다.",
+                moreActions: "더 많은 작업",
+                goBack: "뒤로",
+                thinking: "생각 중...",
+                noDataForChart: "이 차트에 대한 데이터가 없습니다.",
+                chartData: "차트 데이터",
+                close: "닫기",
+            },
+            ar: {
+                dashboardTitle: "لوحة تحكم مدعومة بالذكاء الاصطناعي",
+                dashboardName: "لوحة تحكم مدعومة بالذكاء الاصطناعي",
+                chatWithAI: "الدردشة مع الذكاء الاصطناعي",
+                refreshChat: "تحديث الدردشة",
+                closeChat: "إغلاق الدردشة",
+                typeQueryPlaceholder: "اكتب استعلامك...",
+                openChat: "فتح الدردشة",
+                noChartGenerated: "لم يتم إنشاء أي رسم بياني بعد. اكتب استعلامك في مربع الدردشة أدناه للبدء!",
+                connectingToAI: "جاري الاتصال بالذكاء الاصطناعي...",
+                processingRequest: "جاري معالجة الطلب...",
+                chartGeneratedSuccessfully: "تم إنشاء الرسم البياني بنجاح!",
+                errorCommunicatingAI: "خطأ في الاتصال بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+                chatCleared: "تم مسح الدردشة.",
+                allChartsCleared: "تم مسح جميع الرسوم البيانية.",
+                saveChart: "حفظ الرسم البياني",
+                exportPng: "تصدير PNG",
+                removeChart: "إزالة الرسم البياني",
+                viewData: "عرض البيانات",
+                chartSavedSimulation: "تم حفظ معرف الرسم البياني {chartId} محليًا (محاكاة).",
+                noChartToExport: "لم يتم العثور على رسم بياني بالمعرف {chartId} للتصدير.",
+                noChartToRemove: "لم يتم العثور على رسم بياني بالمعرف {chartId} للإزالة.",
+                dashboardSavedSimulation: "تم حفظ لوحة القيادة محليًا (محاكاة).",
+                dashboardSnapshotExported: "تم تصدير لقطة لوحة القيادة (أول رسم بياني) كصورة PNG. لتصدير PDF كامل للوحة القيادة، يرجى النظر في استخدام مكتبة مخصصة أو العرض من جانب الخادم.",
+                noChartsToExportDashboard: "لا توجد رسوم بيانية للتصدير. يرجى إنشاء رسم بياني أولاً.",
+                errorUnderstandingRequest: "واجهت صعوبة في فهم طلبك للرسم البياني. هل يمكنك إعادة صياغته من فضلك؟",
+                couldNotFetchData: "لم أتمكن من جلب البيانات للرسم البياني المطلوب. قد يكون الجدول فارغًا أو الأعمدة غير صحيحة.",
+                tableNotFound: "لم أتمكن من العثور على الجدول '{tableName}' في قاعدة البيانات. يرجى تحديد جدول صالح من المخطط. الجداول المتاحة هي: {availableTables}",
+                unsupportedChartType: "تم طلب نوع مخطط غير مدعوم.",
+                xAxisNotFound: "لم يتم العثور على عمود المحور السيني '{colName}' في البيانات. الأعمدة المتاحة: {availableCols}",
+                yAxisNotFound: "لم يتم العثور على عمود المحور الصادي '{colName}' في البيانات. الأعمدة المتاحة: {availableCols}",
+                colorColNotFound: "لم يتم العثور على عمود اللون '{colName}' في البيانات. الأعمدة المتاحة: {availableCols}",
+                pieChartRequires: "يتطلب الرسم البياني الدائري كلاً من الأسماء (x_axis) والقيم (y_axis).",
+                donutChartRequires: "يتطلب الرسم البياني الدائري المجوف كلاً من الأسماء (x_axis) والقيم (y_axis).",
+                heatmapRequires: "يتطلب الخريطة الحرارية أعمدة X و Y و Z (القيمة). لم يتم العثور على عمود المحور Z '{colName}'.",
+                scatter3DRequires: "يتطلب مخطط الانتشار ثلاثي الأبعاد أعمدة X و Y و Z. لم يتم العثور على عمود المحور Z '{colName}'.",
+                bubbleChartRequires: "يتطلب مخطط الفقاعات عمود 'الحجم'. لم يتم العثور على عمود الحجم '{colName}'.",
+                cannotApplyAggregation: "تحذير: لا يمكن تطبيق {aggType} على العمود غير الرقمي '{colName}'.",
+                couldNotDetermineColumns: "تعذر تحديد الأعمدة المراد تحديدها للجدول {tableName}.",
+                noSpecificColumns: "لم يتم تحديد أعمدة محددة للجدول {tableName}. سيتم تحديد جميع الأعمدة المتاحة.",
+                errorRetrievingSchema: "خطأ: تعذر استرداد مخطط قاعدة البيانات. يرجى التحقق من اتصال قاعدة البيانات.",
+                aiDidNotUnderstand: "لم أفهم طلبك بالكامل. ربما يمكنك تجربة أحد هذه الخيارات، أو كن أكثر تحديدًا:",
+                unexpectedError: "حدث خطأ غير متوقع: {error}. يرجى المحاولة مرة أخرى.",
+                connectionError: "حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+                couldNotGenerateChart: "تعذر إنشاء رسم بياني لاستعلامك. يرجى محاولة إعادة الصياغة أو طلب أنواع رسوم بيانية محددة.",
+                chartRemoved: "تمت إزالة الرسم البياني {chartId}.",
+                chartExported: "تم تصدير الرسم البياني {chartId} كصورة PNG.",
+                moreActions: "المزيد من الإجراءات",
+                goBack: "العودة",
+                thinking: "جاري التفكير...",
+                noDataForChart: "لا توجد بيانات متاحة لهذا الرسم البياني.",
+                chartData: "بيانات الرسم البياني",
+                close: "إغلاق" // Removed the trailing comma here
+            }
+        };
+
+        // Helper function to get translated text
+        function getTranslatedText(key, replacements = {}) {
+            const lang = localStorage.getItem('language') || 'en';
+            let text = translations[lang][key] || translations['en'][key] || key;
+            for (const [placeholder, value] of Object.entries(replacements)) {
+                text = text.replace(`{${placeholder}}`, value);
+            }
+            return text;
+        }
+
+        // Function to apply translations to the current page
+        function applyTranslationsToPage() {
+            const lang = localStorage.getItem('language') || 'en';
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                        element.placeholder = translations[lang][key];
+                    } else if (element.tagName === 'BUTTON' && element.getAttribute('title')) {
+                        // For buttons with Font Awesome icons, update title attribute
+                        element.title = translations[lang][key];
+                    }
+                     else {
+                        element.innerText = translations[lang][key];
+                    }
+                }
+            });
+            document.title = getTranslatedText('dashboardTitle');
+
+            // For RTL languages like Arabic, set text direction
+            if (lang === 'ar') {
+                document.body.style.direction = 'rtl';
+                document.body.style.textAlign = 'right';
+            } else {
+                document.body.style.direction = 'ltr';
+                document.body.style.textAlign = 'left';
+            }
+        }
+
+        // Helper function to get the HTML for chart action buttons
+        function getChartActionButtonsHtml(chartId) {
+            return `
+                <div class="chart-action-button-container">
+                    <div class="dropdown">
+                        <button class="dropdown-button" onclick="toggleDropdown(event)" title="${getTranslatedText('moreActions')}">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-content">
+                            <button onclick="viewChartData('${chartId}')"><i class="fas fa-table"></i> ${getTranslatedText('viewData')}</button>
+                            <button onclick="saveChart('${chartId}')"><i class="fas fa-save"></i> ${getTranslatedText('saveChart')}</button>
+                            <button onclick="exportChartToPng('${chartId}')"><i class="fas fa-file-image"></i> ${getTranslatedText('exportPng')}</button>
+                            <button onclick="removeChart('${chartId}')"><i class="fas fa-trash"></i> ${getTranslatedText('removeChart')}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to display initial chart type suggestions
+        async function displayInitialSuggestions() {
+            // Check if initial suggestions were already shown in this session
+            if (sessionStorage.getItem('initialSuggestionsShown') === 'true') {
+                return; // Do not show suggestions again on refresh
+            }
+
+            addMessage(getTranslatedText('connectingToAI'), 'message-status'); // Show loading on chart area
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ message: '__INITIAL_LOAD__', language: localStorage.getItem('language') || 'en' }), // Special message to trigger initial response
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Parse response text first, then JSON
+                const responseText = await response.text();
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${parseError.message}`);
+                }
+                
+                hideLoading('dashboard-content');
+
+                // Remove 'Connecting to AI...' message
+                const lastMessage = chatMessages.lastChild;
+                if (lastMessage && lastMessage.classList.contains('message-status') && lastMessage.innerText === getTranslatedText('connectingToAI')) {
+                    chatMessages.removeChild(lastMessage);
+                }
+
+                // Extract response message (handle both string and object with language keys)
+                const userLanguage = localStorage.getItem('language') || 'en';
+                let responseMessage = null;
+                if (data.response) {
+                    if (typeof data.response === 'string') {
+                        responseMessage = data.response;
+                    } else if (typeof data.response === 'object' && data.response[userLanguage]) {
+                        responseMessage = data.response[userLanguage];
+                    } else if (typeof data.response === 'object' && data.response['en']) {
+                        responseMessage = data.response['en'];
+                    } else if (typeof data.response === 'object' && Object.keys(data.response).length > 0) {
+                        responseMessage = Object.values(data.response)[0];
+                    }
+                }
+                
+                if (responseMessage) {
+                    addMessage(responseMessage, 'bot'); // Use the translated welcome message
+                } else if (data.error) {
+                    addMessage(data.error, 'message-bot');
+                } else {
+                    throw new Error('Response missing required fields: response or error');
+                }
+                
+                if (data.suggestions && data.suggestions.length > 0) {
+                    sessionStorage.setItem('initialSuggestionsShown', 'true'); // Set flag here
+                    renderSuggestionButtons(data.suggestions);
+                }
+            } catch (error) {
+                console.error('Error fetching initial suggestions:', error);
+                hideLoading('dashboard-content');
+                const errorMessage = error.message || getTranslatedText('errorCommunicatingAI');
+                addMessage(errorMessage, 'message-bot');
+            }
+        }
+
+        // Helper function to render suggestion buttons (clears container first)
+        function renderSuggestionButtons(suggestions) {
+            // Clear container before adding new buttons
+            if (suggestionButtonsContainer.replaceChildren) {
+                suggestionButtonsContainer.replaceChildren();
+            } else {
+                suggestionButtonsContainer.innerHTML = '';
+            }
+            
+            if (suggestions && suggestions.length > 0) {
+                suggestionButtonsContainer.classList.remove('hidden');
+                suggestions.forEach(suggestion => {
+                    const button = document.createElement('button');
+                    button.innerText = suggestion;
+                    button.setAttribute('data-suggestion', suggestion);
+                    suggestionButtonsContainer.appendChild(button);
+                });
+            } else {
+                suggestionButtonsContainer.classList.add('hidden');
+            }
+        }
+
+        // Handle clicks on suggestion buttons (using event delegation)
+        // Only add listener once - check if already added
+        if (!suggestionButtonsContainer.hasAttribute('data-listener-attached')) {
+            suggestionButtonsContainer.addEventListener('click', function(event) {
+                const button = event.target.closest('button');
+                if (button && button.hasAttribute('data-suggestion')) {
+                    const suggestion = button.getAttribute('data-suggestion');
+                    handleSuggestionClick(suggestion);
+                }
+            });
+            suggestionButtonsContainer.setAttribute('data-listener-attached', 'true');
+        }
+
+        async function handleSuggestionClick(suggestion) {
+            addMessage(suggestion, 'user');
+            userInput.value = ''; // Clear input field
+            // Clear suggestions (renderSuggestionButtons will handle clearing)
+            renderSuggestionButtons([]);
+
+            // Store the forced chart type in session storage
+            sessionStorage.setItem('forcedChartType', suggestion.toLowerCase().replace(' ', '_'));
+
+            addMessage(getTranslatedText('thinking'), 'message-status'); // Indicate LLM is thinking
+            showLoading('dashboard-content', getTranslatedText('processingRequest')); // Show loading on chart area
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        message: suggestion.toLowerCase(), 
+                        language: localStorage.getItem('language') || 'en' 
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Parse response text first, then JSON
+                const responseText = await response.text();
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${parseError.message}`);
+                }
+
+                // Remove 'Thinking...' message
+                const lastMessage = chatMessages.lastChild;
+                if (lastMessage && lastMessage.classList.contains('message-status') && lastMessage.innerText === getTranslatedText('thinking')) {
+                    chatMessages.removeChild(lastMessage);
+                }
+                hideLoading('dashboard-content');
+
+                // Extract response message (handle both string and object with language keys)
+                const userLanguage = localStorage.getItem('language') || 'en';
+                let responseMessage = null;
+                if (data.response) {
+                    if (typeof data.response === 'string') {
+                        responseMessage = data.response;
+                    } else if (typeof data.response === 'object' && data.response[userLanguage]) {
+                        responseMessage = data.response[userLanguage];
+                    } else if (typeof data.response === 'object' && data.response['en']) {
+                        responseMessage = data.response['en'];
+                    } else if (typeof data.response === 'object' && Object.keys(data.response).length > 0) {
+                        responseMessage = Object.values(data.response)[0];
+                    }
+                }
+
+                if (responseMessage) {
+                    addMessage(responseMessage, 'bot');
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        renderSuggestionButtons(data.suggestions);
+                    }
+                } else if (data.chart_json) { // Check for chart_json
+                    renderChart(data.chart_json, data.raw_data); // Call renderChart function with raw_data
+                    addMessage(getTranslatedText('chartGeneratedSuccessfully'), 'message-status');
+
+                    // Clear forced chart type after successful chart generation
+                    sessionStorage.removeItem('forcedChartType');
+
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        renderSuggestionButtons(data.suggestions);
+                    }
+                } else if (data.error) {
+                    addMessage(data.error, 'message-bot');
+                } else {
+                    addMessage(getTranslatedText('errorUnderstandingRequest'), 'message-bot');
+                }
+            } catch (error) {
+                console.error('Error sending suggestion:', error);
+                hideLoading('dashboard-content');
+                const errorMessage = error.message || getTranslatedText('errorCommunicatingAI');
+                addMessage(errorMessage, 'message-bot');
+            }
+        }
+
+
+        // Load theme preference and dashboard name
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.className = savedTheme;
+
+            if (savedTheme === 'dark') {
+                themeToggleCheckbox.checked = true; // Set checkbox state
+            } else {
+                themeToggleCheckbox.checked = false;
+            }
+            
+            // Listen for changes on the checkbox to toggle theme
+            themeToggleCheckbox.addEventListener('change', toggleTheme);
+
+            const savedDashboardName = localStorage.getItem('dashboardName');
+            if (savedDashboardName) {
+                dashboardNameElement.innerText = savedDashboardName;
+            }
+            
+            // Initially hide chatbot on larger screens, show chat circle
+            if (window.innerWidth > 768) {
+                chatCircle.classList.remove('hidden');
+                chatbotBox.classList.add('hidden');
+            }
+
+            // Set initial content for dashboard area
+            // Clear existing content and add the initial message div
+            dashboardContent.innerHTML = '';
+            const initialMessageDiv = document.createElement('div');
+            initialMessageDiv.id = 'initial-chart-message';
+            initialMessageDiv.className = 'initial-chart-message';
+            initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+            dashboardContent.appendChild(initialMessageDiv);
+
+            // Apply translations to the page
+            applyTranslationsToPage();
+
+            // Display initial welcome message and suggestions ONLY if not already shown
+            displayInitialSuggestions();
+        });
+
+        // Save dashboard name on blur or Enter keypress
+        dashboardNameElement.addEventListener('blur', () => {
+            localStorage.setItem('dashboardName', dashboardNameElement.innerText);
+        });
+        dashboardNameElement.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent new line
+                dashboardNameElement.blur(); // Trigger blur to save
+            }
+        });
+
+        // Theme toggle function
+        function toggleTheme() {
+            if (document.body.classList.contains('light')) {
+                document.body.className = 'dark';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.className = 'light';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Add message to chat window
+        function addMessage(message, type = 'bot') {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add(type === 'user' ? 'message-user' : type === 'bot' ? 'message-bot' : 'message-status');
+            messageDiv.innerHTML = message;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
+        }
+
+        // Show loading overlay
+        function showLoading(elementId, message = 'Loading...') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            let overlay = element.querySelector('.loading-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = '<div class="spinner"></div><p>' + message + '</p>';
+                element.appendChild(overlay);
+            } else {
+                overlay.querySelector('p').innerText = message;
+                overlay.style.display = 'flex';
+            }
+        }
+
+        // Hide loading overlay
+        function hideLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            const overlay = element.querySelector('.loading-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // Function to render a new Plotly chart and add it to the dashboard
+        function renderChart(chartJson, rawData) {
+            // Remove the "No chart generated yet" message if it exists
+            const initialMessage = document.getElementById('initial-chart-message');
+            if (initialMessage) {
+                initialMessage.remove();
+            }
+
+            const chartId = `chart_${Date.now()}`; // Unique ID for each chart
+            const chartItemDiv = document.createElement('div');
+            chartItemDiv.className = 'chart-item';
+            chartItemDiv.id = chartId; // Assign the unique ID
+
+            // Add action buttons to the new chart item
+            chartItemDiv.innerHTML = getChartActionButtonsHtml(chartId);
+
+            // Create the Plotly container div inside the chart item
+            const plotlyContainer = document.createElement('div');
+            plotlyContainer.style.width = '100%';
+            plotlyContainer.style.height = '100%';
+            plotlyContainer.style.flexGrow = '1'; // Allow it to fill space
+            chartItemDiv.appendChild(plotlyContainer);
+
+            dashboardContent.appendChild(chartItemDiv); // Append to the grid container
+
+            // Render the Plotly chart
+            Plotly.newPlot(plotlyContainer, chartJson.data, chartJson.layout);
+
+            // Ensure the chart container adapts to its content
+            Plotly.relayout(plotlyContainer, { autosize: true });
+
+            // Store the raw data for "View Data" functionality
+            chartRawDataStore[chartId] = JSON.parse(rawData); // Parse the JSON string back to an object
+
+            // Scroll to the new chart
+            chartItemDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        // Individual chart actions
+        function saveChart(chartId) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                z-index: 10000; text-align: center; font-size: 1.2em;
+            `;
+            modal.innerHTML = `
+                <p>${getTranslatedText('chartSavedSimulation', { chartId: chartId })}</p>
+                <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+            `;
+            document.body.appendChild(modal);
+            addMessage(getTranslatedText('chartSavedSimulation', { chartId: chartId }), 'message-status');
+            closeDropdown();
+        }
+
+        function exportChartToPng(chartId) {
+            const chartDiv = document.getElementById(chartId).querySelector('.plotly');
+            if (chartDiv) {
+                Plotly.downloadImage(chartDiv, {format: 'png', filename: `chart_${chartId}`});
+                addMessage(getTranslatedText('chartExported', { chartId: chartId }), 'message-status');
+            } else {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                    z-index: 10000; text-align: center; font-size: 1.2em;
+                `;
+                modal.innerHTML = `
+                    <p>${getTranslatedText('noChartToExport', { chartId: chartId })}</p>
+                    <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+                `;
+                document.body.appendChild(modal);
+                addMessage(getTranslatedText('noChartToExport', { chartId: chartId }), 'message-status');
+            }
+            closeDropdown();
+        }
+
+        function removeChart(chartId) {
+            const chartToRemove = document.getElementById(chartId);
+            if (chartToRemove) {
+                Plotly.purge(chartToRemove.querySelector('.plotly')); // Clean up Plotly instance
+                chartToRemove.remove();
+                delete chartRawDataStore[chartId]; // Remove data from store
+                addMessage(getTranslatedText('chartRemoved', { chartId: chartId }), 'message-status');
+            } else {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                    z-index: 10000; text-align: center; font-size: 1.2em;
+                `;
+                modal.innerHTML = `
+                    <p>${getTranslatedText('noChartToRemove', { chartId: chartId })}</p>
+                    <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+                `;
+                document.body.appendChild(modal);
+                addMessage(getTranslatedText('noChartToRemove', { chartId: chartId }), 'message-status');
+            }
+            // If all charts are removed, show the initial message again
+            if (dashboardContent.children.length === 0) {
+                const initialMessageDiv = document.createElement('div');
+                initialMessageDiv.id = 'initial-chart-message';
+                initialMessageDiv.className = 'initial-chart-message';
+                initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+                dashboardContent.appendChild(initialMessageDiv);
+            }
+            closeDropdown();
+        }
+
+        // Function to view chart data in a modal
+        function viewChartData(chartId) {
+            const data = chartRawDataStore[chartId];
+            if (!data || data.length === 0) {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                    z-index: 10000; text-align: center; font-size: 1.2em;
+                `;
+                modal.innerHTML = `
+                    <p>${getTranslatedText('noDataForChart')}</p>
+                    <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+                `;
+                document.body.appendChild(modal);
+                addMessage(getTranslatedText('noDataForChart'), 'message-status');
+                closeDropdown();
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto;
+                background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+                border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+                z-index: 10000; padding: 25px; color: #333;
+                display: flex; flex-direction: column;
+            `;
+            modal.innerHTML = `
+                <h3 style="margin-bottom: 15px; text-align: center; color: #086ad8;">${getTranslatedText('chartData')}</h3>
+                <div style="overflow-x: auto; flex-grow: 1;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #e0f2f7;">
+                                ${Object.keys(data[0]).map(key => `<th style="padding: 10px; border: 1px solid #ddd; text-align: left;">${key}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(row => `
+                                <tr>
+                                    ${Object.values(row).map(value => `<td style="padding: 10px; border: 1px solid #ddd;">${value}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 10px 20px; border-radius: 25px; border: none; background-color: #086ad8; color: white; cursor: pointer; align-self: center;">${getTranslatedText('close')}</button>
+            `;
+            document.body.appendChild(modal);
+            closeDropdown();
+        }
+
+        // Send message to chatbot API
+        async function sendMessage() {
+            const prompt = userInput.value.trim();
+            if (prompt === '') return;
+
+            addMessage(prompt, 'user');
+            userInput.value = '';
+            // Clear suggestions after user sends a message
+            renderSuggestionButtons([]);
+
+            addMessage(getTranslatedText('thinking'), 'message-status'); // Indicate LLM is thinking
+            showLoading('dashboard-content', getTranslatedText('processingRequest')); // Show loading on chart area
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        message: prompt, 
+                        language: localStorage.getItem('language') || 'en',
+                        forced_chart_type: sessionStorage.getItem('forcedChartType') // Send the forced chart type
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Parse response text first, then JSON
+                const responseText = await response.text();
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${parseError.message}`);
+                }
+                
+                // Clear the forcedChartType from session storage after use, regardless of success or failure
+                sessionStorage.removeItem('forcedChartType');
+
+                // Remove 'Thinking...' message
+                const lastMessage = chatMessages.lastChild;
+                if (lastMessage && lastMessage.classList.contains('message-status') && lastMessage.innerText === getTranslatedText('thinking')) {
+                    chatMessages.removeChild(lastMessage);
+                }
+
+                hideLoading('dashboard-content'); // Hide loading overlay
+
+                if (data.chart_json) { // Check for chart_json
+                    renderChart(data.chart_json, data.raw_data); // Call renderChart function with raw_data
+                    addMessage(getTranslatedText('chartGeneratedSuccessfully'), 'message-status');
+
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        renderSuggestionButtons(data.suggestions);
+                    }
+                } else if (data.response) { // If it's a text response (e.g., initial prompt for data)
+                    // Extract response message (handle both string and object with language keys)
+                    const userLanguage = localStorage.getItem('language') || 'en';
+                    let responseMessage = null;
+                    if (typeof data.response === 'string') {
+                        responseMessage = data.response;
+                    } else if (typeof data.response === 'object' && data.response[userLanguage]) {
+                        responseMessage = data.response[userLanguage];
+                    } else if (typeof data.response === 'object' && data.response['en']) {
+                        responseMessage = data.response['en'];
+                    } else if (typeof data.response === 'object' && Object.keys(data.response).length > 0) {
+                        responseMessage = Object.values(data.response)[0];
+                    }
+                    if (responseMessage) {
+                        addMessage(responseMessage, 'bot');
+                    } else {
+                        addMessage(getTranslatedText('errorUnderstandingRequest'), 'message-bot');
+                    }
+                    
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        renderSuggestionButtons(data.suggestions);
+                    }
+                } else if (data.error) {
+                    // If an error occurs, and no charts are present, show the initial message
+                    if (dashboardContent.children.length === 0) {
+                        const initialMessageDiv = document.createElement('div');
+                        initialMessageDiv.id = 'initial-chart-message';
+                        initialMessageDiv.className = 'initial-chart-message';
+                        initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+                        dashboardContent.appendChild(initialMessageDiv);
+                    }
+                    const errorMessage = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.innerText = errorMessage;
+                    dashboardContent.appendChild(errorDiv);
+                    addMessage(errorMessage, 'message-bot');
+                } else {
+                    // If no chart and no specific response, show generic info
+                    if (dashboardContent.children.length === 0) {
+                        const initialMessageDiv = document.createElement('div');
+                        initialMessageDiv.id = 'initial-chart-message';
+                        initialMessageDiv.className = 'initial-chart-message';
+                        initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+                        dashboardContent.appendChild(initialMessageDiv);
+                    }
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'info-message';
+                    infoDiv.innerText = getTranslatedText('couldNotGenerateChart');
+                    dashboardContent.appendChild(infoDiv);
+                    addMessage(getTranslatedText('couldNotGenerateChart'), 'message-bot');
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                hideLoading('dashboard-content');
+                // If an error occurs, and no charts are present, show the initial message
+                if (dashboardContent.children.length === 0) {
+                    const initialMessageDiv = document.createElement('div');
+                    initialMessageDiv.id = 'initial-chart-message';
+                    initialMessageDiv.className = 'initial-chart-message';
+                    initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+                    dashboardContent.appendChild(initialMessageDiv);
+                }
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerText = getTranslatedText('connectionError');
+                dashboardContent.appendChild(errorDiv);
+                addMessage(getTranslatedText('connectionError'), 'message-bot');
+            }
+        }
+
+        // Toggle chatbot visibility
+        function toggleChat() {
+            const isHidden = chatbotBox.classList.contains('hidden');
+            if (isHidden) {
+                chatbotBox.classList.remove('hidden');
+                chatCircle.classList.add('hidden'); // Hide circle when chat is open
+            } else {
+                chatbotBox.classList.add('hidden');
+                chatCircle.classList.remove('hidden'); // Show circle when chat is closed
+            }
+        }
+
+        // Clear all chat messages
+        function clearMessages() {
+            chatMessages.innerHTML = ''; // Clear all messages
+            sessionStorage.removeItem('initialSuggestionsShown'); // Clear the flag
+            sessionStorage.removeItem('forcedChartType'); // Clear any forced chart type
+            // Clear any existing buttons before re-displaying
+            renderSuggestionButtons([]);
+            displayInitialSuggestions(); // Re-display initial message and suggestions
+            addMessage(getTranslatedText('chatCleared'), 'message-status');
+        }
+
+        // Clear all charts from the dashboard
+        function clearChart() {
+            dashboardContent.innerHTML = ''; // Clear all charts
+            // Re-add the initial message
+            const initialMessageDiv = document.createElement('div');
+            initialMessageDiv.id = 'initial-chart-message';
+            initialMessageDiv.className = 'initial-chart-message';
+            initialMessageDiv.innerText = getTranslatedText('noChartGenerated');
+            dashboardContent.appendChild(initialMessageDiv);
+            addMessage(getTranslatedText('allChartsCleared'), 'message-status');
+        }
+
+        // Dummy function for saving dashboard (can be expanded later)
+        function saveDashboard() {
+            // Using a custom modal for alerts instead of window.alert
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                z-index: 10000; text-align: center; font-size: 1.2em;
+            `;
+            modal.innerHTML = `
+                <p>${getTranslatedText('dashboardSavedSimulation')}</p>
+                <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+            `;
+            document.body.appendChild(modal);
+
+            addMessage(getTranslatedText('dashboardSavedSimulation'), 'message-status');
+            closeDropdown(); // Close dropdown after action
+        }
+
+        // Dummy function for exporting dashboard to PDF (can be expanded later)
+        function exportDashboardToPdf() {
+            // This function now exports the *entire dashboard* as a single PNG, if possible.
+            // For a true PDF export of multiple charts, a more complex library or server-side rendering is needed.
+            const dashboardArea = document.getElementById('dashboard-content');
+            if (dashboardArea.children.length > 1 || (dashboardArea.children.length === 1 && dashboardArea.querySelector('.plotly'))) {
+                // If there's more than just the initial message, or if there's a plotly chart
+                // For simplicity, we'll just export the first chart found, or inform the user.
+                const firstChartDiv = dashboardArea.querySelector('.plotly');
+                if (firstChartDiv) {
+                    Plotly.downloadImage(firstChartDiv, {format: 'png', filename: 'dashboard_snapshot'});
+                    addMessage(getTranslatedText('dashboardSnapshotExported'), 'message-status');
+                } else {
+                     const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                        background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                        z-index: 10000; text-align: center; font-size: 1.2em;
+                    `;
+                    modal.innerHTML = `
+                        <p>${getTranslatedText('noChartsToExportDashboard')}</p>
+                        <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+                    `;
+                    document.body.appendChild(modal);
+                    addMessage(getTranslatedText('noChartsToExportDashboard'), 'message-status');
+                }
+            } else {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                    z-index: 10000; text-align: center; font-size: 1.2em;
+                `;
+                modal.innerHTML = `
+                    <p>${getTranslatedText('noChartsToExportDashboard')}</p>
+                    <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 8px 15px; border-radius: 5px; border: none; background-color: #086ad8; color: white; cursor: pointer;">OK</button>
+                `;
+                document.body.appendChild(modal);
+                addMessage(getTranslatedText('noChartsToExportDashboard'), 'message-status');
+            }
+            closeDropdown(); // Close dropdown after action
+        }
+
+        // Dropdown functions
+        function toggleDropdown(event) {
+            event.stopPropagation(); // Prevent document click from closing it immediately
+            // Get the parent of the dropdown button, which is the div with class "dropdown"
+            const dropdownContainer = event.currentTarget.closest('.dropdown');
+            dropdownContainer.classList.toggle("show");
+        }
+
+        function closeDropdown() {
+            const openDropdown = document.querySelector(".dropdown.show");
+            if (openDropdown) {
+                openDropdown.classList.remove('show');
+            }
+        }
+
+        // Close the dropdown if the user clicks outside of it
+        window.onclick = function(event) {
+          if (!event.target.matches('.dropdown-button') && !event.target.closest('.dropdown-content')) {
+            closeDropdown();
+          }
+        }
+    </script>
+</body>
+</html>
