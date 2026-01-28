@@ -63,3 +63,9 @@ dist/
 .env.production
 .env.development
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
+
