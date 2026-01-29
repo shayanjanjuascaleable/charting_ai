@@ -8,12 +8,12 @@ import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ModuleNotFoundError:
+    pass
 from flask import Flask, render_template, request, jsonify, send_file
-
-# Load environment variables from .env file (for local development)
-# This does not override existing environment variables (production-safe)
-load_dotenv()
 import google.generativeai as genai
 import google.api_core.exceptions as genai_exceptions
 import pandas as pd

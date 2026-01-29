@@ -6,12 +6,13 @@
 #
 # REQUIRED GITHUB SECRETS (Settings > Secrets and variables > Actions):
 #   - AZURE_WEBAPP_NAME: Name of your Azure App Service
-#   - AZURE_PUBLISH_PROFILE: Azure publish profile for the app service
+#   - AZURE_PUBLISH_PROFILE: Azure publish profile XML content for the app service
+#   - AZURE_PROFILE_PAGE: Azure portal profile page URL (informational)
 #
-# To obtain publish profile:
+# To obtain AZURE_PUBLISH_PROFILE:
 #   1. Go to Azure Portal > Your App Service > Get publish profile
 #   2. Copy the entire XML content
-#   3. Add as a GitHub secret with the name above
+#   3. Add as a GitHub secret with the name AZURE_PUBLISH_PROFILE
 
 name: Build and Deploy to Azure Web App
 
@@ -22,8 +23,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_PROFILE_PAGE: "https://portal.azure.com/#profile"
-  AZURE_WEB_PAGE: "https://your-app-name.azurewebsites.net"
+  AZURE_PROFILE_PAGE: ${{ secrets.AZURE_PROFILE_PAGE }}
+  AZURE_WEB_PAGE: "https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net"
 
 jobs:
   build:
@@ -96,7 +97,7 @@ jobs:
           mkdir -p deploy-artifact/frontend
           # Copy all frontend files except node_modules
           find frontend -type f -not -path '*/node_modules/*' \
-            -not -path '*/.next/*' \
+            -not -path '*/.next/cache/*' \
             -not -path '*/.venv/*' \
             -not -path '*/venv/*' \
             -not -path '*/.env*' \
@@ -126,40 +127,41 @@ jobs:
         path: deploy-artifact/
         retention-days: 1
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: 'Production'
-      url: ${{ env.AZURE_WEB_PAGE }}
-    
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: webapp
-        path: .
-    
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-        package: .
-    
-    - name: Deployment Summary
-      run: |
-        echo "=========================================="
-        echo "🚀 Azure Deployment Complete"
-        echo "=========================================="
-        echo ""
-        echo "📦 Deployment Details:"
-        echo "   App Name: ${{ secrets.AZURE_WEBAPP_NAME }}"
-        echo "   URL: ${{ env.AZURE_WEB_PAGE }}"
-        echo ""
-        echo "🔗 Azure Portal Links:"
-        echo "   Profile: ${{ env.AZURE_PROFILE_PAGE }}"
-        echo "   Web Page: ${{ env.AZURE_WEB_PAGE }}"
-        echo ""
-        echo "=========================================="
+  # Deploy job disabled - using azure-deploy.yml for deployment
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: 'Production'
+  #     url: ${{ env.AZURE_WEB_PAGE }}
+  #   
+  #   steps:
+  #   - name: Download artifact
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       name: webapp
+  #       path: .
+  #   
+  #   - name: Deploy to Azure Web App
+  #     uses: azure/webapps-deploy@v3
+  #     with:
+  #       app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+  #       publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+  #       package: .
+  #   
+  #   - name: Deployment Summary
+  #     run: |
+  #       echo "=========================================="
+  #       echo "🚀 Azure Deployment Complete"
+  #       echo "=========================================="
+  #       echo ""
+  #       echo "📦 Deployment Details:"
+  #       echo "   App Name: ${{ secrets.AZURE_WEBAPP_NAME }}"
+  #       echo "   URL: ${{ env.AZURE_WEB_PAGE }}"
+  #       echo ""
+  #       echo "🔗 Azure Portal Links:"
+  #       echo "   Profile: ${{ env.AZURE_PROFILE_PAGE }}"
+  #       echo "   Web Page: ${{ env.AZURE_WEB_PAGE }}"
+  #       echo ""
+  #       echo "=========================================="
 

@@ -22,6 +22,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: azure-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AZURE_PROFILE_PAGE: ${{ secrets.AZURE_PROFILE_PAGE }}
   AZURE_WEB_PAGE: "https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net"
