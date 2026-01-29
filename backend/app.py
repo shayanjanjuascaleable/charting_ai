@@ -710,7 +710,7 @@ async def chat(request_body: ChatRequest):
     
     all_table_schemas = get_all_table_schemas()
     if not all_table_schemas:
-        return {'response': {
+        error_messages = {
             'en': 'Error: Could not retrieve database schema. Please check database connection.',
             'es': 'Error: No se pudo recuperar el esquema de la base de datos. Por favor, verifica la conexión a la base de datos.',
             'fr': 'Erreur : Impossible de récupérer le schéma de la base de données. Veuillez vérifier la conexión a la base de données.',
@@ -718,7 +718,11 @@ async def chat(request_body: ChatRequest):
             'ja': 'エラー: データベーススキーマを取得できませんでした。データベース接続を確認してください。',
             'ko': '오류: 데이터베이스 스키마를 검색할 수 없습니다. 데이터베이스 연결을 확인하십시오.',
             'ar': 'خطأ: تعذر استرداد مخطط قاعدة البيانات. يرجى التحقق من اتصال قاعدة البيانات.'
-        }.get(user_language, 'Error: Could not retrieve database schema. Please check database connection.'), 'suggestions': []})
+        }
+        return {
+            'response': error_messages.get(user_language, 'Error: Could not retrieve database schema. Please check database connection.'),
+            'suggestions': []
+        }
     
     schema_info = ""
     for table_name, schema in all_table_schemas.items():
@@ -888,7 +892,7 @@ Required JSON schema:
         # If still no valid params after retries
         if not chart_params:
             print(f"[{request_id}] Failed to parse JSON after retries: {parse_error}")
-                    return {
+            return {
                 'error_type': 'MODEL_OUTPUT_ERROR',
                 'message': f'Could not parse chart parameters from AI response. {parse_error}',
                 'suggestions': []
@@ -898,7 +902,7 @@ Required JSON schema:
         
         if table_name not in all_table_schemas:
             print(f"[{request_id}] Invalid table: {table_name}")
-                    return {
+            return {
                 'error_type': 'DATA_ERROR',
                 'message': f"Table '{table_name}' not found in database. Available: {', '.join(all_table_schemas.keys())}",
                 'suggestions': []
@@ -1133,7 +1137,7 @@ Respond with ONLY valid JSON matching the schema above."""
             return response_data
         else:
             print(f"[{request_id}] No data fetched or empty dataframe")
-                    return {
+            return {
                 'error_type': 'DATA_ERROR',
                 'message': 'Could not fetch data for the requested chart. The table might be empty or the columns are incorrect.',
                 'suggestions': []
@@ -1165,7 +1169,7 @@ Respond with ONLY valid JSON matching the schema above."""
             print(f"[{request_id}] General suggestions failed: {e}")
             general_suggestions_list = []
             
-            return {'response': {
+            error_messages = {
                 'en': "I didn't fully understand your request. Perhaps you could try one of these, or be more specific:",
                 'es': "No entendí completamente tu solicitud. Quizás podrías intentar una de estas opciones, o ser más específico:",
                 'fr': "Je n'ai pas entièrement compris votre demande. Vous pourriez peut-être essayer l'une de ces options, ou être plus précis :",
@@ -1173,11 +1177,15 @@ Respond with ONLY valid JSON matching the schema above."""
                 'ja': "リクエストを完全に理解できませんでした。これらのいずれかを試すか、より具体的にしてください：",
                 'ko': "요청을 완전히 이해하지 못했습니다. 다음 중 하나를 시도하거나 더 구체적으로 말씀해 주십시오:",
                 'ar': "لم أفهم طلبك بالكامل. ربما يمكنك تجربة أحد هذه الخيارات، أو كن أكثر تحديدًا:"
-            }.get(user_language, "I didn't fully understand your request. Perhaps you could try one of these, or be more specific:"), 'suggestions': general_suggestions_list})
+            }
+            return {
+                'response': error_messages.get(user_language, "I didn't fully understand your request. Perhaps you could try one of these, or be more specific:"),
+                'suggestions': general_suggestions_list
+            }
     
     except genai_exceptions.ResourceExhausted as e:
         print(f"[{request_id}] Gemini quota exceeded: {e}")
-                    return {
+        return {
             'error_type': 'RATE_LIMIT',
             'message': 'AI quota exceeded. Please try again shortly or upgrade billing.',
             'suggestions': []
