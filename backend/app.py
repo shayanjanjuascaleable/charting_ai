@@ -13,7 +13,11 @@ try:
     load_dotenv()
 except ModuleNotFoundError:
     pass
-from flask import Flask, render_template, request, jsonify, send_file
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import Optional
 try:
     import google.generativeai as genai
 except ModuleNotFoundError as e:
@@ -30,15 +34,22 @@ from sqlalchemy.pool import QueuePool
 from sqlalchemy.engine import Engine
 import pyodbc
 
-# Configure Flask with backend-relative paths
+# Configure FastAPI with backend-relative paths
 # Get backend directory path
 BACKEND_DIR = Path(__file__).resolve().parent
+FRONTEND_STATIC_DIR = BACKEND_DIR / 'static' / 'frontend'
 
-app = Flask(__name__, 
-            template_folder=str(BACKEND_DIR / 'templates'),
-            static_folder=str(BACKEND_DIR / 'static'))
-# Flask secret key is hard-coded as per your request
-app.secret_key = 'YourStrongSecretKey123!'
+app = FastAPI()
+
+# Mount static files for Vite frontend assets
+if FRONTEND_STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_STATIC_DIR / "assets")), name="assets")
+
+# Request model for /chat endpoint
+class ChatRequest(BaseModel):
+    message: str
+    language: Optional[str] = None
+    forced_chart_type: Optional[str] = None
 
 # --- LLM API Configuration ---
 # Load from environment variable, with fallback for backward compatibility
@@ -666,16 +677,6 @@ def create_chart_json(df, chart_params):
     # Use to_plotly_json() to get dict directly (faster, avoids double serialization)
     return fig.to_plotly_json()
     
-@app.route('/')
-def index():
-    """Renders the main landing page."""
-    return render_template('index.html')
-    
-@app.route('/insights')
-def insights():
-    """Renders the insights dashboard page."""
-    return render_template('insights_page.html')
-    
 INITIAL_CHART_SUGGESTIONS = [
     "bar chart", "pie chart", "donut chart", "3d chart", "line chart", "scatter plot", "histogram",
     "box plot", "area chart", "bubble chart"
@@ -691,24 +692,25 @@ def detect_language(text: str) -> str:
     if arabic_pattern.search(text):
         return 'ar'
     return 'en'
-    
-@app.route('/chat', methods=['POST'])
-def chat():
+
+# API routes (must come before SPA fallback)
+@app.post('/chat')
+async def chat(request_body: ChatRequest):
     """Handles chatbot interactions with robust error handling and JSON parsing."""
     request_id = str(uuid.uuid4())[:8]
-    user_message_raw = request.json.get('message', '')
+    user_message_raw = request_body.message
     user_message = user_message_raw.lower()
     # Detect language from input if not explicitly provided
     detected_lang = detect_language(user_message_raw)
-    user_language = request.json.get('language', detected_lang) # Use detected language as fallback
-    forced_chart_type_raw = request.json.get('forced_chart_type') # Get forced chart type from frontend
+    user_language = request_body.language if request_body.language else detected_lang # Use detected language as fallback
+    forced_chart_type_raw = request_body.forced_chart_type # Get forced chart type from frontend
     forced_chart_type = normalize_chart_type(forced_chart_type_raw) if forced_chart_type_raw else None
     
     print(f"[{request_id}] Request: message='{user_message_raw[:50]}...', lang={user_language}, forced_type={forced_chart_type}")
     
     all_table_schemas = get_all_table_schemas()
     if not all_table_schemas:
-        return jsonify({'response': {
+        return {'response': {
             'en': 'Error: Could not retrieve database schema. Please check database connection.',
             'es': 'Error: No se pudo recuperar el esquema de la base de datos. Por favor, verifica la conexión a la base de datos.',
             'fr': 'Erreur : Impossible de récupérer le schéma de la base de données. Veuillez vérifier la conexión a la base de données.',
@@ -737,7 +739,7 @@ def chat():
             'ar': "أنا مساعدك الذكي للتحليلات. كيف يمكنني تصور بياناتك؟"
         }.get(user_language, "I am your AI Insight Assistant. How can I visualize your data?")
         suggestions = ["Bar Chart", "Pie Chart", "Donut Chart", "3D Chart", "Line Chart", "Scatter Plot", "Histogram"]
-        return jsonify({'response': welcome_message, 'suggestions': suggestions})
+        return {'response': welcome_message, 'suggestions': suggestions}
     
     # If the user's message is an initial chart type suggestion, respond with a follow-up question
     # and indicate the requested_chart_type for the frontend to store.
@@ -753,7 +755,7 @@ def chat():
             'ar': f"رائع! ما هي البيانات التي ترغب في رؤيتها في {user_message}؟"
         }
         response_text = response_texts.get(user_language, f"Great! What data would you like to see in a {user_message}?")
-        return jsonify({'response': response_text, 'suggestions': [], 'forced_chart_type': normalized_type or user_message})
+        return {'response': response_text, 'suggestions': [], 'forced_chart_type': normalized_type or user_message}
     
     try:
         # Include forced_chart_type in the prompt if available, but primarily for context.
@@ -869,38 +871,38 @@ Required JSON schema:
 {{"table_name":"string","chart_type":"bar_chart|line_chart|...","x_axis":"string","y_axis":"string","title":"string","summary":"string","aggregate_y":"string|null","color":"string|null","z_axis":"string|null","size":"string|null","chart_reasoning":"string|null","chart_warnings":"array|null"}}"""
             except genai_exceptions.ResourceExhausted as e:
                 print(f"[{request_id}] Gemini quota exceeded: {e}")
-                return jsonify({
+                return {
                     'error_type': 'RATE_LIMIT',
                     'message': 'AI quota exceeded. Please try again shortly or upgrade billing.',
                     'suggestions': []
-                }), 200
+                }
             except Exception as e:
                 print(f"[{request_id}] Gemini call error (attempt {attempt+1}): {type(e).__name__}: {e}")
                 if attempt == 1:
-                    return jsonify({
+                    return {
                         'error_type': 'MODEL_OUTPUT_ERROR',
                         'message': f'Failed to generate chart parameters: {str(e)}',
                         'suggestions': []
-                    }), 200
+                    }
         
         # If still no valid params after retries
         if not chart_params:
             print(f"[{request_id}] Failed to parse JSON after retries: {parse_error}")
-            return jsonify({
+                    return {
                 'error_type': 'MODEL_OUTPUT_ERROR',
                 'message': f'Could not parse chart parameters from AI response. {parse_error}',
                 'suggestions': []
-            }), 200
+            }
     
         table_name = chart_params.get('table_name')
         
         if table_name not in all_table_schemas:
             print(f"[{request_id}] Invalid table: {table_name}")
-            return jsonify({
+                    return {
                 'error_type': 'DATA_ERROR',
                 'message': f"Table '{table_name}' not found in database. Available: {', '.join(all_table_schemas.keys())}",
                 'suggestions': []
-            }), 200
+            }
         
         # Normalize and enforce forced_chart_type if present
         if forced_chart_type:
@@ -992,11 +994,11 @@ Respond with ONLY valid JSON matching the schema above."""
                                         if suggested_fields_retry:
                                             error_msg += f" Valid numeric fields: {', '.join(suggested_fields_retry[:5])}"
                                         print(f"[{request_id}] Retry validation still failed: {error_msg}")
-                                        return jsonify({
+                                        return {
                                             'error_type': 'DATA_ERROR',
                                             'message': error_msg,
                                             'suggestions': []
-                                        }), 200
+                                        }
                                 else:
                                     print(f"[{request_id}] Retry JSON validation failed: {error_msg_retry}")
                             else:
@@ -1010,11 +1012,11 @@ Respond with ONLY valid JSON matching the schema above."""
                 if suggested_fields:
                     error_msg += f" Valid numeric fields: {', '.join(suggested_fields[:5])}"
                 print(f"[{request_id}] Chart validation failed: {error_msg}")
-                return jsonify({
+                return {
                     'error_type': 'DATA_ERROR',
                     'message': error_msg,
                     'suggestions': []
-                }), 200
+                }
         
         df = fetch_data_for_chart(chart_params)
         if df is not None and not df.empty:
@@ -1039,7 +1041,7 @@ Respond with ONLY valid JSON matching the schema above."""
                     # Convert chart_json to JSON-safe format before returning
                     if 'chart_json' in response_dict:
                         response_dict['chart_json'] = to_json_safe_plotly(response_dict['chart_json'])
-                    return jsonify(response_dict)
+                    return response_dict
                 else:
                     del _response_cache[cache_key]
             
@@ -1051,18 +1053,18 @@ Respond with ONLY valid JSON matching the schema above."""
                 if chart_data is None or 'error' in chart_data:
                     error_msg = chart_data.get('error', 'Failed to generate chart') if chart_data else 'Failed to generate chart'
                     print(f"[{request_id}] Chart generation error: {error_msg}")
-                    return jsonify({
+                    return {
                         'error_type': 'DATA_ERROR',
                         'message': error_msg,
                         'suggestions': []
-                    }), 200
+                    }
             except Exception as e:
                 print(f"[{request_id}] Chart creation exception: {type(e).__name__}: {e}")
-                return jsonify({
+                return {
                     'error_type': 'DATA_ERROR',
                     'message': f'Failed to create chart: {str(e)}',
                     'suggestions': []
-                }), 200
+                }
             
             # Generate follow-up suggestions
             chart_context = f"You just created a {chart_params['chart_type']} showing {chart_params.get('y_axis', 'data')} by {chart_params.get('x_axis', 'category')} from the '{table_name}' table."
@@ -1128,14 +1130,14 @@ Respond with ONLY valid JSON matching the schema above."""
             _response_cache[cache_key] = (response_data, time.time() + RESPONSE_CACHE_TTL)
             print(f"[{request_id}] Success: chart_type={chart_params['chart_type']}, cache_size={len(_response_cache)}")
             
-            return jsonify(response_data)
+            return response_data
         else:
             print(f"[{request_id}] No data fetched or empty dataframe")
-            return jsonify({
+                    return {
                 'error_type': 'DATA_ERROR',
                 'message': 'Could not fetch data for the requested chart. The table might be empty or the columns are incorrect.',
                 'suggestions': []
-            }), 200
+            }
         
         # No table_name in params - provide general suggestions
         try:
@@ -1163,7 +1165,7 @@ Respond with ONLY valid JSON matching the schema above."""
             print(f"[{request_id}] General suggestions failed: {e}")
             general_suggestions_list = []
             
-            return jsonify({'response': {
+            return {'response': {
                 'en': "I didn't fully understand your request. Perhaps you could try one of these, or be more specific:",
                 'es': "No entendí completamente tu solicitud. Quizás podrías intentar una de estas opciones, o ser más específico:",
                 'fr': "Je n'ai pas entièrement compris votre demande. Vous pourriez peut-être essayer l'une de ces options, ou être plus précis :",
@@ -1175,20 +1177,48 @@ Respond with ONLY valid JSON matching the schema above."""
     
     except genai_exceptions.ResourceExhausted as e:
         print(f"[{request_id}] Gemini quota exceeded: {e}")
-        return jsonify({
+                    return {
             'error_type': 'RATE_LIMIT',
             'message': 'AI quota exceeded. Please try again shortly or upgrade billing.',
             'suggestions': []
-        }), 200
+        }
     except Exception as e:
         print(f"[{request_id}] Unexpected error: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
+        return {
             'error_type': 'DATA_ERROR',
             'message': f'An unexpected error occurred: {str(e)}. Please try again.',
             'suggestions': []
-        }), 200
+        }
+
+# SPA fallback: serve index.html for all non-API routes
+# These routes must come AFTER all API routes (like /chat) so FastAPI matches them first
+# Order matters: more specific routes (/ and /insights) before catch-all
+@app.get('/')
+async def serve_root():
+    """Serve the Vite React app for root path."""
+    index_path = FRONTEND_STATIC_DIR / 'index.html'
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not built")
+
+@app.get('/{path:path}')
+async def serve_spa(path: str):
+    """Serve the Vite React app for all non-API routes (SPA fallback)."""
+    # Don't serve index.html for static assets (they're handled by /assets/ mount)
+    if path.startswith('assets/'):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve index.html from Vite build
+    index_path = FRONTEND_STATIC_DIR / 'index.html'
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        # Fallback: return 404 if Vite build not available
+        raise HTTPException(status_code=404, detail="Frontend not built")
     
 if __name__ == '__main__':
-    app.run(debug=True)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

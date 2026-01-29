@@ -377,6 +377,11 @@ const Landing = () => {
       <footer className="border-t border-border/50 py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           © 2026 Scaleable Solutions. {direction === 'rtl' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
+          {import.meta.env.VITE_BUILD_SHA && (
+            <span className="block mt-2 text-xs opacity-60">
+              Build: {import.meta.env.VITE_BUILD_SHA.substring(0, 7)}
+            </span>
+          )}
         </div>
       </footer>
     </div>

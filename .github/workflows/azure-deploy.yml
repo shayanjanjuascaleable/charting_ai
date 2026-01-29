@@ -64,6 +64,8 @@ jobs:
     
     - name: Build Frontend
       working-directory: ./frontend
+      env:
+        VITE_BUILD_SHA: ${{ github.sha }}
       run: npm run build
     
     - name: Prepare deployment artifact
@@ -88,7 +90,8 @@ jobs:
             -not -path '*/.env*' \
             -not -path '*/*.db' \
             -not -path '*/data/*.db' \
-            -not -path '*/*.log' | \
+            -not -path '*/*.log' \
+            -not -path '*/static/frontend/*' | \
           while read file; do
             rel_path="${file#backend/}"
             mkdir -p "deploy-artifact/backend/$(dirname "$rel_path")"
@@ -96,25 +99,11 @@ jobs:
           done
         fi
         
-        # Copy frontend (excluding node_modules, but including dist)
-        if [ -d "frontend" ]; then
-          mkdir -p deploy-artifact/frontend
-          # Copy all frontend files except node_modules
-          find frontend -type f -not -path '*/node_modules/*' \
-            -not -path '*/.next/cache/*' \
-            -not -path '*/.venv/*' \
-            -not -path '*/venv/*' \
-            -not -path '*/.env*' \
-            -not -path '*/*.log' | \
-          while read file; do
-            rel_path="${file#frontend/}"
-            mkdir -p "deploy-artifact/frontend/$(dirname "$rel_path")"
-            cp "$file" "deploy-artifact/frontend/$rel_path"
-          done
-          # Ensure dist folder is included (build output)
-          if [ -d "frontend/dist" ]; then
-            cp -r frontend/dist deploy-artifact/frontend/
-          fi
+        # Copy frontend dist to backend/static/frontend
+        if [ -d "frontend/dist" ]; then
+          echo "Copying frontend/dist to backend/static/frontend..."
+          mkdir -p deploy-artifact/backend/static/frontend
+          cp -r frontend/dist/* deploy-artifact/backend/static/frontend/
         fi
         
         # Copy root-level files
