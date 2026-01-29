@@ -14,7 +14,10 @@ try:
 except ModuleNotFoundError:
     pass
 from flask import Flask, render_template, request, jsonify, send_file
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ModuleNotFoundError as e:
+    raise RuntimeError("Missing dependency: google-generativeai. Ensure requirements are installed.") from e
 import google.api_core.exceptions as genai_exceptions
 import pandas as pd
 import numpy as np
