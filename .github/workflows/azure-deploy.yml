@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: azure-deploy-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
