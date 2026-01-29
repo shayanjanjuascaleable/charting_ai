@@ -1,0 +1,165 @@
+# GitHub Actions Workflow for Azure App Service Deployment
+#
+# This workflow builds and deploys the application to Azure App Service using a 2-job pattern:
+# 1. Build job: Validates dependencies, builds frontend, and creates deployment artifact
+# 2. Deploy job: Downloads artifact and deploys to Azure App Service
+#
+# REQUIRED GITHUB SECRETS (Settings > Secrets and variables > Actions):
+#   - AZURE_WEBAPP_NAME: Name of your Azure App Service
+#   - AZURE_PUBLISH_PROFILE: Azure publish profile XML content for the app service
+#   - AZURE_PROFILE_PAGE: Azure portal profile page URL (informational)
+#
+# To obtain AZURE_PUBLISH_PROFILE:
+#   1. Go to Azure Portal > Your App Service > Get publish profile
+#   2. Copy the entire XML content
+#   3. Add as a GitHub secret with the name AZURE_PUBLISH_PROFILE
+
+name: Build and Deploy to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_PROFILE_PAGE: ${{ secrets.AZURE_PROFILE_PAGE }}
+  AZURE_WEB_PAGE: "https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Create Python virtual environment and install dependencies
+      working-directory: ./backend
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r ./requirements.txt
+    
+    - name: Install Frontend Dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: npm run build
+    
+    - name: Prepare deployment artifact
+      run: |
+        # Create a clean deployment package excluding unnecessary files
+        # The artifact will contain the entire repo root with exclusions
+        echo "Preparing deployment artifact..."
+        
+        # Create a temporary directory for the artifact
+        mkdir -p deploy-artifact
+        
+        # Copy backend (excluding venv and cache)
+        if [ -d "backend" ]; then
+          mkdir -p deploy-artifact/backend
+          # Copy backend files excluding venv, cache, and sensitive files
+          find backend -type f -not -path '*/venv/*' \
+            -not -path '*/.venv/*' \
+            -not -path '*/venv_new/*' \
+            -not -path '*/antenv/*' \
+            -not -path '*/__pycache__/*' \
+            -not -path '*/*.pyc' \
+            -not -path '*/.env*' \
+            -not -path '*/*.db' \
+            -not -path '*/data/*.db' \
+            -not -path '*/*.log' | \
+          while read file; do
+            rel_path="${file#backend/}"
+            mkdir -p "deploy-artifact/backend/$(dirname "$rel_path")"
+            cp "$file" "deploy-artifact/backend/$rel_path"
+          done
+        fi
+        
+        # Copy frontend (excluding node_modules, but including dist)
+        if [ -d "frontend" ]; then
+          mkdir -p deploy-artifact/frontend
+          # Copy all frontend files except node_modules
+          find frontend -type f -not -path '*/node_modules/*' \
+            -not -path '*/.next/cache/*' \
+            -not -path '*/.venv/*' \
+            -not -path '*/venv/*' \
+            -not -path '*/.env*' \
+            -not -path '*/*.log' | \
+          while read file; do
+            rel_path="${file#frontend/}"
+            mkdir -p "deploy-artifact/frontend/$(dirname "$rel_path")"
+            cp "$file" "deploy-artifact/frontend/$rel_path"
+          done
+          # Ensure dist folder is included (build output)
+          if [ -d "frontend/dist" ]; then
+            cp -r frontend/dist deploy-artifact/frontend/
+          fi
+        fi
+        
+        # Copy root-level files
+        for file in Procfile run.py README.md .gitignore startup.sh; do
+          if [ -f "$file" ]; then
+            cp "$file" deploy-artifact/
+          fi
+        done
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: webapp
+        path: deploy-artifact/
+        retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: 'Production'
+      url: ${{ env.AZURE_WEB_PAGE }}
+    
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: webapp
+        path: .
+    
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        package: .
+    
+    - name: Deployment Summary
+      run: |
+        echo "=========================================="
+        echo "🚀 Azure Deployment Complete"
+        echo "=========================================="
+        echo ""
+        echo "📦 Deployment Details:"
+        echo "   App Name: ${{ secrets.AZURE_WEBAPP_NAME }}"
+        echo "   URL: ${{ env.AZURE_WEB_PAGE }}"
+        echo ""
+        echo "🔗 Azure Portal Links:"
+        echo "   Profile: ${{ env.AZURE_PROFILE_PAGE }}"
+        echo "   Web Page: ${{ env.AZURE_WEB_PAGE }}"
+        echo ""
+        echo "=========================================="
